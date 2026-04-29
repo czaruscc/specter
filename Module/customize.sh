@@ -28,9 +28,11 @@ else
 fi
 
 mkdir -p "$MODPATH/webroot/json"
+RUNTIME_DIR="${MODPATH//modules_update/modules}"
 cat > "$MODPATH/webroot/json/module_paths.json" <<JSON
-{"MODDIR": "$MODPATH"}
+{"MODDIR": "$RUNTIME_DIR"}
 JSON
+unset RUNTIME_DIR
 
 case "$ARCH" in
     arm64) RKA_ARCH="arm64-v8a" ;;

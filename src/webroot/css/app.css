@@ -1,9 +1,9 @@
 #pages {
   padding: 16px;
-  padding-bottom: 8px;
+  padding-bottom: 80px;
 }
 
-section {
+section:not([hidden]) {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -11,6 +11,8 @@ section {
 
 .network-chip {
   font-size: 0.75rem;
+  /* Note: --mdui-comp-chip-container-height is an internal mdui component token
+     and may change between versions. No public API exists for small chips in mdui v2. */
   --mdui-comp-chip-container-height: 28px;
 }
 
@@ -53,7 +55,7 @@ section {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   min-height: 96px;
 }
 
@@ -72,18 +74,16 @@ section {
   font-variant-numeric: tabular-nums;
   word-break: break-all;
   font-size: clamp(0.85rem, 3.5vw, 1.1rem);
+  font-weight: 400;
 }
 
 #status-card.status-offline {
-  --mdui-color-surface-variant: color-mix(in srgb, var(--mdui-color-error) 15%, var(--mdui-color-surface));
+  --mdui-color-surface-variant: var(--mdui-color-error-container);
 }
 
 .section-label {
   margin: 12px 0 4px 4px;
   color: var(--mdui-color-primary);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  font-size: 0.7rem;
 }
 
 .action-card {
@@ -124,6 +124,10 @@ section {
 mdui-select,
 mdui-segmented-button-group {
   width: 100%;
+}
+
+mdui-divider.settings-divider {
+  margin: 8px 0;
 }
 
 .preset-chips {
@@ -183,7 +187,6 @@ mdui-segmented-button-group {
 .contributor-name {
   margin: 0;
   text-align: center;
-  font-weight: 500;
 }
 
 .contributor-role {
@@ -218,7 +221,7 @@ mdui-segmented-button-group {
 
 .history-output {
   background: var(--mdui-color-surface-container);
-  border-radius: 8px;
+  border-radius: var(--mdui-shape-corner-small);
   padding: 8px 12px;
   font-size: 0.75rem;
   white-space: pre-wrap;
@@ -232,4 +235,32 @@ mdui-segmented-button-group {
   text-align: center;
   color: var(--mdui-color-on-surface-variant);
   padding: 32px 0;
+}
+
+.terminal {
+  background: #1a1a1a;
+  border-radius: var(--mdui-shape-corner-small);
+  padding: 12px;
+  max-height: 60vh;
+  overflow-y: auto;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.terminal pre {
+  margin: 0;
+  color: #e0e0e0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+mdui-navigation-bar {
+  margin: 0 12px 16px;
+  width: auto;
+  left: 0;
+  right: 0;
+  border-radius: var(--mdui-shape-corner-extra-large);
+  overflow: hidden;
+  z-index: 1000;
 }

@@ -23,10 +23,12 @@ export function openUrl(rawUrl) {
 
   if (window.ksu?.exec) {
     const escaped = url.href.replace(/'/g, "\\'");
+    const cbName = `redirect_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    window[cbName] = () => { delete window[cbName]; };
     window.ksu.exec(
       `am start -a android.intent.action.VIEW -d '${escaped}'`,
       '{}',
-      `redirect_${Date.now()}`
+      cbName
     );
   } else {
     window.open(url.href, '_blank');

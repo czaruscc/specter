@@ -573,8 +573,8 @@ fi
 ```
 id=Yurikey
 name=Yurikey Manager
-version=v3.1.0
-versionCode=310
+version=v4.0.0
+versionCode=400
 author=Yurikey Dev
 description=A systemless module to get strong integrity so easily
 updateJson=https://raw.githubusercontent.com/Yurii0307/yurikey/main/update.json

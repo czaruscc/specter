@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang=en dir=ltr><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0, viewport-fit=cover"><meta name=color-scheme content="dark light"><title>Yurikey Manager</title><link rel=stylesheet href=webroot.355bace3.css onerror="this.onerror=null;this.href='https://unpkg.com/mdui@2/mdui.css'"><link rel=stylesheet href=webroot.4df15fa5.css><script>!function(){var e=localStorage.getItem("themeMode")||"dark",t=localStorage.getItem("themePreset")||"ocean";document.documentElement.setAttribute("data-theme-mode",e),document.documentElement.setAttribute("data-theme-preset",t)}();</script><body>
+<!DOCTYPE html><html lang=en dir=ltr><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0, viewport-fit=cover"><meta name=color-scheme content="dark light"><title data-i18n=app_title>Yurikey Manager</title><link rel=stylesheet href="https://fonts.googleapis.com/icon?family=Material+Icons" onerror="this.onerror=null;this.href='assets/material-icons.css'"><link rel=stylesheet href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" onerror="this.onerror=null;this.href='assets/material-icons-outlined.css'"><link rel=stylesheet href=webroot.355bace3.css onerror="this.onerror=null;this.href='https://unpkg.com/mdui@2/mdui.css'"><link rel=stylesheet href=webroot.379879c8.css><script>!function(){var e=localStorage.getItem("themeMode")||"dark",t=localStorage.getItem("themePreset")||"ocean";document.documentElement.setAttribute("data-theme-mode",e),document.documentElement.setAttribute("data-theme-preset",t)}();</script><body>
   <mdui-layout>
 
     <mdui-top-app-bar id=top-bar scroll-behavior=elevate scroll-threshold=4>
@@ -34,37 +34,37 @@
             <mdui-card class=info-card variant=filled>
               <mdui-icon name=calendar_today class=info-card__icon></mdui-icon>
               <p class="info-card__label mdui-typescale-label-small" data-i18n=home_clock_date>Date</p>
-              <p class="info-card__value mdui-typescale-title-large" id=clock-date>—</p>
+              <p class=info-card__value id=clock-date>—</p>
             </mdui-card>
 
             <mdui-card class=info-card variant=filled>
               <mdui-icon name=schedule class=info-card__icon></mdui-icon>
               <p class="info-card__label mdui-typescale-label-small" data-i18n=home_clock_time>Time</p>
-              <p class="info-card__value mdui-typescale-title-large" id=clock-time>—</p>
+              <p class=info-card__value id=clock-time>—</p>
             </mdui-card>
 
             <mdui-card class=info-card variant=filled id=status-card>
               <mdui-icon name=wifi class=info-card__icon id=status-icon></mdui-icon>
               <p class="info-card__label mdui-typescale-label-small" data-i18n=home_status>Status</p>
-              <p class="info-card__value mdui-typescale-title-large" id=status-value data-i18n=home_status_online>Online</p>
+              <p class=info-card__value id=status-value data-i18n=home_status_online>Online</p>
             </mdui-card>
 
             <mdui-card class=info-card variant=filled>
               <mdui-icon name=android class=info-card__icon></mdui-icon>
-              <p class="info-card__label mdui-typescale-label-small">Android</p>
-              <p class="info-card__value mdui-typescale-title-large" id=android-value>—</p>
+              <p class="info-card__label mdui-typescale-label-small" data-i18n=home_android>Android</p>
+              <p class=info-card__value id=android-value>—</p>
             </mdui-card>
 
             <mdui-card class=info-card variant=filled>
               <mdui-icon name=memory class=info-card__icon></mdui-icon>
-              <p class="info-card__label mdui-typescale-label-small">Kernel</p>
-              <p class="info-card__value mdui-typescale-title-large" id=kernel-value>—</p>
+              <p class="info-card__label mdui-typescale-label-small" data-i18n=home_kernel>Kernel</p>
+              <p class=info-card__value id=kernel-value>—</p>
             </mdui-card>
 
             <mdui-card class=info-card variant=filled>
               <mdui-icon name=vpn_key class=info-card__icon></mdui-icon>
               <p class="info-card__label mdui-typescale-label-small" data-i18n=home_root>Root</p>
-              <p class="info-card__value mdui-typescale-title-large" id=root-value>—</p>
+              <p class=info-card__value id=root-value>—</p>
             </mdui-card>
 
           </div>
@@ -73,7 +73,7 @@
 
         <section id=actions-page hidden>
 
-          <p class="mdui-typescale-title-small section-label" data-i18n=menu_keybox>Keybox</p>
+          <p class="mdui-typescale-label-small section-label" data-i18n=menu_keybox>Keybox</p>
           <mdui-card variant=elevated class=action-card>
             <mdui-list>
               <mdui-list-item icon=key data-script=keybox.sh class=action-item rounded>
@@ -86,11 +86,11 @@
             </mdui-list>
           </mdui-card>
 
-          <p class="mdui-typescale-title-small section-label" data-i18n=menu_gms_section>GMS</p>
+          <p class="mdui-typescale-label-small section-label" data-i18n=menu_gms_section>GMS</p>
           <mdui-card variant=elevated class=action-card>
             <mdui-list>
 
-              <mdui-list-item icon=block data-script=kill_google_process.sh class=action-item rounded>
+              <mdui-list-item icon=block data-script=gms.sh class=action-item rounded>
                 <span data-i18n=menu_force_clear>Force Stop &amp; Clear Play Store</span>
                 <span slot=description data-i18n=menu_force_clear_desc>
                   Force-stops Play Store and wipes its data cache
@@ -104,16 +104,6 @@
                 <span data-i18n=menu_target>Set Up target.txt</span>
                 <span slot=description data-i18n=menu_target_desc>
                   Generates Tricky Store target.txt with all installed apps
-                </span>
-                <mdui-circular-progress slot=end-icon class="action-spinner hidden"></mdui-circular-progress>
-              </mdui-list-item>
-
-              <mdui-divider></mdui-divider>
-
-              <mdui-list-item icon=apps data-script=select_app_necessary.sh class=action-item rounded>
-                <span data-i18n=menu_necessary>Only Necessary Apps</span>
-                <span slot=description data-i18n=menu_necessary_desc>
-                  Sets only fixed targets — no dynamic package scanning
                 </span>
                 <mdui-circular-progress slot=end-icon class="action-spinner hidden"></mdui-circular-progress>
               </mdui-list-item>
@@ -145,11 +135,11 @@
 
         <section id=advanced-page hidden>
 
-          <p class="mdui-typescale-title-small section-label" data-i18n=advance_menu_title_extended>Detection &amp; Fixes</p>
+          <p class="mdui-typescale-label-small section-label" data-i18n=advance_menu_title_extended>Detection &amp; Fixes</p>
           <mdui-card variant=elevated class=action-card>
             <mdui-list>
 
-              <mdui-list-item icon=delete_sweep data-script=clear_all_detection_traces.sh class=action-item rounded>
+              <mdui-list-item icon=delete_sweep data-script=cleanup.sh class=action-item rounded>
                 <span data-i18n=advance_clear_all_detection_traces>Clear All Detection Traces</span>
                 <span slot=description data-i18n=advance_clear_all_detection_traces_desc>
                   Deletes detector app data, temp files, resets props, removes ODEX
@@ -189,7 +179,7 @@
 
               <mdui-divider></mdui-divider>
 
-              <mdui-list-item icon=code_off data-script=lsposed2.sh class=action-item rounded>
+              <mdui-list-item icon=code_off data-script=lsposed.sh class=action-item rounded>
                 <span data-i18n=advance_fix_detect_lsposed>Fix LSPosed Detection</span>
                 <span slot=description data-i18n=advance_fix_lsposed_desc>
                   Deletes all base.odex files from /data/app
@@ -229,7 +219,7 @@
 
               <mdui-divider></mdui-divider>
 
-              <mdui-list-item icon=cloud_sync data-script=yurirka.sh class=action-item rounded>
+              <mdui-list-item icon=cloud_sync data-script=rka.sh class=action-item rounded>
                 <span data-i18n=advance_upd_yurirka>Update RKA Config</span>
                 <span slot=description data-i18n=advance_upd_rka_desc>
                   Provisions Remote Key Attestation config for PassIt
@@ -240,12 +230,12 @@
             </mdui-list>
           </mdui-card>
 
-          <p class="mdui-typescale-title-small section-label" data-i18n=advance_tee_section>
+          <p class="mdui-typescale-label-small section-label" data-i18n=advance_tee_section>
             Fix TEE: OnePlus, RedMagic, Realme, Oppo…
           </p>
           <mdui-card variant=elevated class=action-card>
             <mdui-list>
-              <mdui-list-item icon=layers data-script=widevinel1.sh class=action-item rounded>
+              <mdui-list-item icon=layers data-script=widevine.sh class=action-item rounded>
                 <span data-i18n=advance_wdevinel1>Fix Widevine L1</span>
                 <span slot=description data-i18n=advance_wdevinel1_desc>
                   Copies FixWidevineL1 files and runs KmInstallKeybox vendor binary
@@ -259,22 +249,22 @@
 
         <section id=settings-page hidden>
 
-          <p class="mdui-typescale-title-small section-label" data-i18n=settings_language>Language</p>
+          <p class="mdui-typescale-label-small section-label" data-i18n=settings_language>Language</p>
           <mdui-card variant=elevated class=settings-card>
             <mdui-select id=language-select variant=outlined icon=language></mdui-select>
           </mdui-card>
 
-          <p class="mdui-typescale-title-small section-label" data-i18n=settings_appearance>Appearance</p>
+          <p class="mdui-typescale-label-small section-label" data-i18n=settings_appearance>Appearance</p>
           <mdui-card variant=elevated class=settings-card>
 
             <p class="mdui-typescale-label-large settings-sublabel" data-i18n=settings_theme_mode>Mode</p>
             <mdui-segmented-button-group id=theme-mode-group selects=single value=dark>
-              <mdui-segmented-button value=dark icon=dark_mode data-i18n-label=theme_mode_dark>Dark</mdui-segmented-button>
-              <mdui-segmented-button value=light icon=light_mode data-i18n-label=theme_mode_light>Light</mdui-segmented-button>
-              <mdui-segmented-button value=auto icon=brightness_auto data-i18n-label=theme_mode_auto>Auto</mdui-segmented-button>
+              <mdui-segmented-button value=dark icon=dark_mode data-i18n=theme_mode_dark>Dark</mdui-segmented-button>
+              <mdui-segmented-button value=light icon=light_mode data-i18n=theme_mode_light>Light</mdui-segmented-button>
+              <mdui-segmented-button value=auto icon=brightness_auto data-i18n=theme_mode_auto>Auto</mdui-segmented-button>
             </mdui-segmented-button-group>
 
-            <mdui-divider style="margin:12px 0"></mdui-divider>
+            <mdui-divider class=settings-divider></mdui-divider>
 
             <p class="mdui-typescale-label-large settings-sublabel" data-i18n=settings_color_preset>Color</p>
             <div id=preset-chips class=preset-chips>
@@ -302,16 +292,16 @@
 
           </mdui-card>
 
-          <p class="mdui-typescale-title-small section-label" data-i18n=settings_clock_format>Clock Format</p>
+          <p class="mdui-typescale-label-small section-label" data-i18n=settings_clock_format>Clock Format</p>
           <mdui-card variant=elevated class=settings-card>
             <mdui-select id=clock-format-select variant=outlined icon=schedule>
-              <mdui-menu-item value=auto data-i18n-label=clock_format_auto>Auto (Device)</mdui-menu-item>
-              <mdui-menu-item value=24h data-i18n-label=clock_format_24h>24-hour</mdui-menu-item>
-              <mdui-menu-item value=12h data-i18n-label=clock_format_12h>12-hour (AM/PM)</mdui-menu-item>
+              <mdui-menu-item value=auto data-i18n=clock_format_auto>Auto (Device)</mdui-menu-item>
+              <mdui-menu-item value=24h data-i18n=clock_format_24h>24-hour</mdui-menu-item>
+              <mdui-menu-item value=12h data-i18n=clock_format_12h>12-hour (AM/PM)</mdui-menu-item>
             </mdui-select>
           </mdui-card>
 
-          <p class="mdui-typescale-title-small section-label" data-i18n=update_title>Update &amp; Support</p>
+          <p class="mdui-typescale-label-small section-label" data-i18n=update_title>Update &amp; Support</p>
           <mdui-card variant=elevated class=settings-card>
             <p class=mdui-typescale-body-medium data-i18n=update_desc>
               Stay up to date with the latest Yurikey releases and bug fixes.
@@ -329,7 +319,7 @@
             </p>
           </mdui-card>
 
-          <p class="mdui-typescale-title-small section-label" data-i18n=settings_contributors>Project Contributors</p>
+          <p class="mdui-typescale-label-small section-label" data-i18n=settings_contributors>Project Contributors</p>
           <div id=contributors-grid class=contributors-grid></div>
 
         </section>
@@ -337,20 +327,20 @@
       </div>
     </mdui-layout-main>
 
-    <mdui-navigation-bar id=nav-bar value=home label-visibility=selected>
-      <mdui-navigation-bar-item value=home icon=home--outlined active-icon=home data-i18n-label=nav_home>Home</mdui-navigation-bar-item>
-
-      <mdui-navigation-bar-item value=actions icon=tune--outlined active-icon=tune data-i18n-label=nav_menu>Actions</mdui-navigation-bar-item>
-
-      <mdui-navigation-bar-item value=advanced icon=shield--outlined active-icon=shield data-i18n-label=nav_advancemenu>Advanced</mdui-navigation-bar-item>
-
-      <mdui-navigation-bar-item value=settings icon=settings--outlined active-icon=settings data-i18n-label=nav_settings>Settings</mdui-navigation-bar-item>
-    </mdui-navigation-bar>
-
   </mdui-layout>
+
+  <mdui-navigation-bar id=nav-bar value=home label-visibility=selected>
+    <mdui-navigation-bar-item value=home icon=home--outlined active-icon=home data-i18n=nav_home>Home</mdui-navigation-bar-item>
+
+    <mdui-navigation-bar-item value=actions icon=tune--outlined active-icon=tune data-i18n=nav_menu>Actions</mdui-navigation-bar-item>
+
+    <mdui-navigation-bar-item value=advanced icon=shield--outlined active-icon=shield data-i18n=nav_advancemenu>Advanced</mdui-navigation-bar-item>
+
+    <mdui-navigation-bar-item value=settings icon=settings--outlined active-icon=settings data-i18n=nav_settings>Settings</mdui-navigation-bar-item>
+  </mdui-navigation-bar>
 
   <script src=webroot.91863aa8.js onerror="this.onerror=null;this.src='https://unpkg.com/mdui@2/mdui.global.js'">
   </script>
-  <script type=module src=webroot.e094977f.js></script>
+  <script type=module src=webroot.432b9c9a.js></script>
 
 

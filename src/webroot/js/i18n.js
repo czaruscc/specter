@@ -1,10 +1,17 @@
 import { cfgGet, cfgSet } from './cfg.js';
 
 let currentStrings = {};
+let fallbackStrings = {};
 
 export async function initI18n() {
+  // Pre-load English as fallback for missing translations
+  try {
+    const res = await fetch(`lang/source/string.json?ts=${Date.now()}`);
+    fallbackStrings = await res.json();
+  } catch { fallbackStrings = {}; }
+
   const saved = await cfgGet('lang', 'en') || 'en';
-  await applyLanguage(saved);
+  await applyLanguage(saved, true);
   wireLanguageSelect(saved);
 }
 
@@ -26,7 +33,7 @@ export async function applyLanguage(langCode) {
 }
 
 export function getTranslation(key) {
-  return currentStrings[key] || null;
+  return currentStrings[key] || fallbackStrings[key] || null;
 }
 
 export function getStrings() {
@@ -36,69 +43,62 @@ export function getStrings() {
 function applyTranslations() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.dataset.i18n;
-    const value = currentStrings[key];
-    if (!value) return;
 
-    if (el.children.length > 0 && value.includes('<')) {
-      el.innerHTML = value;
+    if (el.tagName === 'TITLE') {
+      const val = currentStrings[key] || fallbackStrings[key];
+      if (val) document.title = val;
+      return;
+    }
+
+    // Try current language first, fall back to English
+    const val = currentStrings[key] || fallbackStrings[key];
+    if (!val) return;
+
+    if (val.includes('<')) {
+      el.innerHTML = val;
     } else {
-      const textNode = [...el.childNodes].find(n => n.nodeType === Node.TEXT_NODE);
-      if (textNode) {
-        textNode.textContent = value;
-      } else {
-        el.textContent = value;
-      }
+      while (el.firstChild) el.removeChild(el.firstChild);
+      el.appendChild(document.createTextNode(val));
     }
   });
 
-  document.querySelectorAll('[data-i18n-label]').forEach(el => {
-    const key = el.dataset.i18nLabel;
-    if (currentStrings[key]) el.label = currentStrings[key];
-  });
 }
 
 function wireLanguageSelect(currentLang) {
   const select = document.getElementById('language-select');
   if (!select) return;
 
+  // Wait for mdui-select to be upgraded before populating
+  customElements.whenDefined('mdui-select').then(() => {
+
   const LANGUAGES = [
     ['en', '🇬🇧', 'English'],
-    ['af', '🇿🇦', 'Afrikaans'],
-    ['ar', '🇸🇦', 'العربية'],
-    ['ca', '🏴', 'Català'],
-    ['cs', '🇨🇿', 'Čeština'],
-    ['da', '🇩🇰', 'Dansk'],
-    ['de', '🇩🇪', 'Deutsch'],
-    ['el', '🇬🇷', 'Ελληνικά'],
-    ['es', '🇪🇸', 'Español'],
-    ['fi', '🇫🇮', 'Suomi'],
-    ['fr', '🇫🇷', 'Français'],
-    ['he', '🇮🇱', 'עברית'],
-    ['hu', '🇭🇺', 'Magyar'],
-    ['it', '🇮🇹', 'Italiano'],
-    ['ja', '🇯🇵', '日本語'],
-    ['ko', '🇰🇷', '한국어'],
-    ['nl', '🇳🇱', 'Nederlands'],
-    ['no', '🇳🇴', 'Norsk'],
-    ['pl', '🇵🇱', 'Polski'],
-    ['pt', '🇵🇹', 'Português'],
-    ['ro', '🇷🇴', 'Română'],
-    ['ru', '🇷🇺', 'Русский'],
-    ['sr', '🇷🇸', 'Српски'],
-    ['sv', '🇸🇪', 'Svenska'],
-    ['tr', '🇹🇷', 'Türkçe'],
-    ['uk', '🇺🇦', 'Українська'],
-    ['vi', '🇻🇳', 'Tiếng Việt'],
     ['zh', '🇨🇳', '中文'],
+    ['ru', '🇷🇺', 'Русский'],
+    ['es', '🇪🇸', 'Español'],
+    ['pt', '🇵🇹', 'Português'],
+    ['hi', '🇮🇳', 'हिन्दी'],
+    ['ar', '🇸🇦', 'العربية'],
+    ['fr', '🇫🇷', 'Français'],
+    ['de', '🇩🇪', 'Deutsch'],
+    ['tr', '🇹🇷', 'Türkçe'],
   ];
 
   LANGUAGES.forEach(([code, flag, name]) => {
     const item = document.createElement('mdui-menu-item');
     item.value = code;
     item.textContent = `${flag} ${name}`;
+    item.addEventListener('click', async () => {
+      try {
+        await applyLanguage(code);
+        select.value = code;
+      } catch (e) {
+        console.warn('Language change failed:', e);
+      }
+    });
     select.appendChild(item);
   });
 
   select.value = currentLang;
-  select.addEventListener('change', () => applyLanguage(select.value));
+  });
 }

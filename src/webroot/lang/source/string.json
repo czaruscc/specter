@@ -7,6 +7,8 @@
   "nav_settings": "Settings",
 
   "home_version": "Module Version",
+  "home_android": "Android",
+  "home_kernel": "Kernel",
   "home_root": "Root",
   "home_refresh": "Refresh Info",
   "home_refreshing": "Refreshing…",

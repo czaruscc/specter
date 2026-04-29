@@ -26,12 +26,14 @@ check_prop "service.adb.root" "0"
 check_prop "ro.crypto.state" "encrypted"
 
 if [ "$KSU" != "true" ]; then
-    log "SERVICE" "Magisk detected — polling sys.boot_completed"
-    resetprop -w sys.boot_completed 0
+    log "SERVICE" "Magisk detected — waiting for sys.boot_completed"
+    while [ "$(getprop sys.boot_completed)" != "1" ]; do
+      sleep 1
+    done
     settings put global development_settings_enabled 0
     settings put global adb_enabled 0
     settings put global oem_unlock_allowed 0
     resetprop --delete persist.service.adb.enable
     resetprop --delete persist.service.debuggable
-    resetprop persist.sys.developer_options 0
+    resetprop -n persist.sys.developer_options 0
 fi

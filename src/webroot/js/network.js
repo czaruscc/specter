@@ -45,23 +45,21 @@ export async function updateNetworkStatus() {
   }
 }
 
+const ONLINE_ENDPOINTS = [
+  'https://clients3.google.com/generate_204',
+  'https://www.gstatic.com/generate_204',
+];
+
 async function checkOnline() {
   if (!navigator.onLine) return false;
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 2000);
-    await fetch('https://clients3.google.com/generate_204', { signal: ctrl.signal });
-    clearTimeout(timer);
-    return true;
-  } catch {
+  for (const endpoint of ONLINE_ENDPOINTS) {
     try {
-      const ctrl2 = new AbortController();
-      const timer2 = setTimeout(() => ctrl2.abort(), 2000);
-      await fetch('https://clients3.google.com/generate_204', { mode: 'no-cors', signal: ctrl2.signal });
-      clearTimeout(timer2);
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 2000);
+      await fetch(endpoint, { signal: ctrl.signal, mode: 'no-cors' });
+      clearTimeout(timer);
       return true;
-    } catch {
-      return false;
-    }
+    } catch { /* try next endpoint */ }
   }
+  return false;
 }

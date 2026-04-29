@@ -50,20 +50,26 @@ function applyDeviceInfo(data) {
 }
 
 export async function loadVersion() {
-  const { runScriptRaw } = await getBridge();
+  let version = null;
+
   try {
+    const { runScriptRaw } = await getBridge();
     const { stdout } = await runScriptRaw(
       `grep '^version=' "${getModuleDir()}/module.prop" | cut -d'=' -f2`
     );
-    if (stdout) setText('version-value', stdout.trim());
-  } catch {
+    if (stdout) version = stdout.trim();
+  } catch { /* fall through to HTTP fallback */ }
+
+  if (!version) {
     try {
       const res = await fetch('/module.prop');
       const text = await res.text();
       const match = text.match(/^version=(.+)$/m);
-      if (match) setText('version-value', match[1].trim());
-    } catch { }
+      if (match) version = match[1].trim();
+    } catch { /* ignore */ }
   }
+
+  if (version) setText('version-value', version);
 }
 
 function setText(id, value) {

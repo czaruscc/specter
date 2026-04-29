@@ -32,4 +32,11 @@ if [ -f "$IDFILE" ]; then
     rm -f "$IDFILE" 2>/dev/null
 fi
 
+# Clean up RKA config in PassIt app data
+RKA_CFG="/data/user/$(id -u)/io.github.mhmrdd.libxposed.ps.passit/files/rka_configs.json"
+if [ -f "$RKA_CFG" ]; then
+    rm -f "$RKA_CFG" 2>/dev/null
+    log "UNINSTALL" "Removed RKA config"
+fi
+
 return 0

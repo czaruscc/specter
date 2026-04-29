@@ -6,6 +6,9 @@ export async function initBridge() {
   try {
     const r = await fetch('/json/module_paths.json?ts=' + Date.now());
     MODULE = await r.json();
+    if (MODULE?.MODDIR) {
+      MODULE.MODDIR = MODULE.MODDIR.replace('/modules_update/', '/modules/');
+    }
   } catch {
     const src = document.currentScript?.src || '';
     const m = src.match(/^(file:\/\/\/data\/adb\/modules\/[^/]+)/);
@@ -48,9 +51,13 @@ export function runScript(scriptName, type = 'feature') {
       reject(new Error('timeout'));
     }, EXEC_TIMEOUT_MS);
 
-    window[cbName] = function (output) {
+    window[cbName] = function (code, stdout, stderr) {
       cleanup();
-      const result = parseScriptOutput(output);
+      if (typeof code === 'number') {
+        resolve({ success: code === 0, output: stdout || '', rawOutput: stdout || '' });
+        return;
+      }
+      const result = parseScriptOutput(code);
       if (result.success) resolve(result);
       else reject(Object.assign(new Error('script-error'), { result }));
     };
@@ -76,9 +83,22 @@ export function runScriptRaw(command) {
     const executor = getExecutor();
     if (!executor) { reject(new Error('no-bridge')); return; }
     const cbName = `cb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    window[cbName] = function (output) {
+    window[cbName] = function (code, stdout, stderr) {
       delete window[cbName];
-      resolve({ stdout: output || '', stderr: '' });
+      if (typeof code === 'number') {
+        resolve({ stdout: stdout || '', stderr: stderr || '' });
+        return;
+      }
+      if (!code) { resolve({ stdout: '', stderr: '' }); return; }
+      try {
+        const json = JSON.parse(code);
+        resolve({
+          stdout: json.result || json.stdout || json.output || '',
+          stderr: json.stderr || json.error || '',
+        });
+      } catch {
+        resolve({ stdout: code, stderr: '' });
+      }
     };
     try {
       if (executor === 'mmrl') {
@@ -92,11 +112,64 @@ export function runScriptRaw(command) {
   });
 }
 
+function createChildProcess() {
+  const cbs = { stdout: [], stderr: [], stdin: [], exit: [], error: [] };
+  const child = {
+    stdout: {
+      on(ev, fn) { if (ev === 'data') cbs.stdout.push(fn); },
+      emit(ev, data) { if (ev === 'data') cbs.stdout.forEach(fn => fn(data)); },
+    },
+    stderr: {
+      on(ev, fn) { if (ev === 'data') cbs.stderr.push(fn); },
+      emit(ev, data) { if (ev === 'data') cbs.stderr.forEach(fn => fn(data)); },
+    },
+    stdin: { on() {}, emit() {} },
+    on(ev, fn) { if (cbs[ev]) cbs[ev].push(fn); },
+    emit(ev, ...args) { if (cbs[ev]) cbs[ev].forEach(fn => fn(...args)); },
+  };
+  return child;
+}
+
+export function spawnScript(scriptName, type = 'feature') {
+  const executor = getExecutor();
+  const child = createChildProcess();
+  if (!executor) { setTimeout(() => child.emit('error', new Error('no-bridge'))); return child; }
+  if (!MODULE) { setTimeout(() => child.emit('error', new Error('no-module-path'))); return child; }
+
+  const scriptPath = scriptDir(type) + scriptName;
+
+  if (executor === 'ksu' && typeof window.ksu?.spawn === 'function') {
+    const cbName = `sp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    window[cbName] = child;
+    child.on('exit', () => delete window[cbName]);
+    child.on('error', () => delete window[cbName]);
+    try {
+      window.ksu.spawn('sh', JSON.stringify([scriptPath]), '{}', cbName);
+    } catch (e) { delete window[cbName]; setTimeout(() => child.emit('error', e)); }
+  } else {
+    const cmd = `sh '${scriptPath}'`;
+    let timedOut = false;
+    const t = setTimeout(() => { timedOut = true; child.emit('error', new Error('timeout')); }, EXEC_TIMEOUT_MS);
+    runScriptRaw(cmd).then(({ stdout, stderr }) => {
+      if (timedOut) return;
+      clearTimeout(t);
+      if (stdout) stdout.split('\n').forEach(l => l && child.stdout.emit('data', l));
+      if (stderr) stderr.split('\n').forEach(l => l && child.stderr.emit('data', l));
+      child.emit('exit', 0);
+    }).catch(e => { if (!timedOut) { clearTimeout(t); child.emit('error', e); } });
+  }
+  return child;
+}
+
 function parseScriptOutput(raw) {
   if (!raw) return { success: true, rawOutput: '' };
   try {
     const json = JSON.parse(raw);
-    return { success: json.success !== false, output: json.output || '', rawOutput: raw };
+    return {
+      success: json.success !== false,
+      output: json.result || json.stdout || json.output || '',
+      rawOutput: raw,
+    };
   } catch {
     return { success: true, rawOutput: raw };
   }

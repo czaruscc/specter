@@ -1,8 +1,15 @@
 key
 attestation
-Module/
+pastebin/
+agents_reports/
+screenshots_before/
+testing/
+*.zip
 node_modules/
 .parcel-cache/
+Module/webroot/webroot.*.js.map
+Module/webroot/webroot.*.css.map
 Module/webroot/json/device-info.json
 Module/webroot/lang/source/string.json
 string.yml
+yurikey-main

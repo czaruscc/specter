@@ -1,36 +1,25 @@
-import { getModuleDir } from './cfg.js';
+import { escapeHtml } from './utils.js';
 
-function historyFile() { return `${getModuleDir()}/script_history.log`; }
+const STORAGE_KEY = 'yurikey_script_history';
+const MAX_ENTRIES = 240;
 
-export async function getHistory() {
+export function getHistory() {
   try {
-    const { exec } = await import('./bridge.js');
-    const { stdout } = await exec(`cat "${historyFile()}" 2>/dev/null || echo "[]"`);
-    return JSON.parse(stdout);
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
   } catch { return []; }
 }
 
-export async function addEntry(scriptName, output) {
-  if (!output?.trim()) return;
-  const ts = new Date().toISOString();
-  const file = historyFile();
-  const tmp = `${file}.tmp`;
-  const entry = JSON.stringify({ script: scriptName, output, time: ts });
-  const { exec } = await import('./bridge.js');
-  await exec(
-    `printf '%s\\n' '${entry.replace(/'/g, "'\\''")}' > "${tmp}" && ` +
-    `cat "${file}" 2>/dev/null >> "${tmp}" && ` +
-    `head -240 "${tmp}" > "${file}" && rm -f "${tmp}"`
-  );
+export function addEntry(scriptName, output) {
+  if (typeof output !== 'string') output = String(output || '');
+  if (!output.trim()) return;
+  const entries = getHistory();
+  entries.unshift({ script: scriptName, output, time: new Date().toISOString() });
+  if (entries.length > MAX_ENTRIES) entries.length = MAX_ENTRIES;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch { /* storage full */ }
 }
 
-export async function clearHistory() {
-  const { exec } = await import('./bridge.js');
-  await exec(`printf '[]' > "${historyFile()}"`);
-}
-
-function escapeHtml(str) {
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+export function clearHistory() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
 }
 
 export async function openHistoryDialog() {

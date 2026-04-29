@@ -1,3 +1,5 @@
+import { escapeHtml } from './utils.js';
+
 export async function loadContributors() {
   const grid = document.getElementById('contributors-grid');
   if (!grid) return;
@@ -35,12 +37,4 @@ export async function loadContributors() {
       openUrl(decodeURI(card.dataset.url));
     });
   });
-}
-
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
