@@ -11,5 +11,5 @@ export const API_URLS = {
   KEY_CATALOG: 'https://rawbin.netlify.app/key/catalog',
   KEY_CATALOG_LOOKUP: 'https://rawbin.netlify.app/key/catalog',
   GITHUB: 'https://github.com/khx/specter',
-  TELEGRAM: 'https://t.me/yuriiroot',
+  TELEGRAM: 'https://t.me/dpejoh',
 };

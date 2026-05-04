@@ -7,11 +7,19 @@ export async function initI18n() {
   try {
     const res = await fetch(`lang/source/string.json?ts=${Date.now()}`);
     fallbackStrings = await res.json();
-  } catch { fallbackStrings = {}; } /* fetch/parse fallback */
+  } catch { fallbackStrings = {}; }
 
-  const saved = await cfgGet('lang', 'en') || 'en';
-  await applyLanguage(saved, true);
-  wireLanguageSelect(saved);
+  const saved = await cfgGet('lang', 'auto') || 'auto';
+  let langCode;
+  if (saved === 'auto') {
+    const detected = (navigator.language || '').slice(0, 2);
+    const available = ['en', 'zh', 'ru', 'es', 'ar'];
+    langCode = available.includes(detected) ? detected : 'en';
+  } else {
+    langCode = saved;
+  }
+  await applyLanguage(langCode);
+  wireLanguageSelect(langCode);
 }
 
 export async function applyLanguage(langCode) {
@@ -84,12 +92,7 @@ function wireLanguageSelect(currentLang) {
     ['zh', '🇨🇳', '中文'],
     ['ru', '🇷🇺', 'Русский'],
     ['es', '🇪🇸', 'Español'],
-    ['pt', '🇵🇹', 'Português'],
-    ['hi', '🇮🇳', 'हिन्दी'],
     ['ar', '🇸🇦', 'العربية'],
-    ['fr', '🇫🇷', 'Français'],
-    ['de', '🇩🇪', 'Deutsch'],
-    ['tr', '🇹🇷', 'Türkçe'],
   ];
 
   LANGUAGES.forEach(([code, flag, name]) => {

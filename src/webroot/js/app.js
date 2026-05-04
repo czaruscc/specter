@@ -40,6 +40,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initI18n();
   Promise.all([initClock(), initNetwork(), populateProviders(), loadContributors()]).catch(err => console.warn('Init error:', err));
   await initDevice();
+  wireBlacklistToggle();
+  wireSmartmergeEditor();
+  wireToggles();
   initRedirect();
   buildFriendlyNames();
 
@@ -401,6 +404,7 @@ async function openCustomKeyboxDialog() {
   clearBtn.addEventListener('click', async () => {
     cfgSet('kb_custom_type', '');
     cfgSet('kb_custom_value', '');
+    cfgSet('kb_private', '');
     showToast(t('custom_kb_cleared', 'Custom keybox cleared'), { icon: 'info', type: 'info', autoCloseDelay: 2500 });
     dialog.close();
   });
@@ -415,30 +419,59 @@ async function openCustomKeyboxDialog() {
       return;
     }
 
-    // Show detecting toast
+    // Ask if this is a private keybox
+    const privateChoice = await new Promise(resolve => {
+      const pd = document.createElement('md-dialog');
+      pd.innerHTML = `
+        <div slot="headline">${t('custom_kb_title', 'Custom Keybox')}</div>
+        <div slot="content" style="text-align:center;padding:8px 16px">
+          <p style="font-size:0.9375rem;margin:8px 0">${t('custom_kb_private_ask', 'Is this a private keybox?')}</p>
+        </div>
+        <div slot="actions">
+          <md-filled-tonal-button id="kb-pri-no" style="flex:1">${t('custom_kb_no', 'No')}</md-filled-tonal-button>
+          <md-filled-button id="kb-pri-yes" style="flex:1">${t('custom_kb_yes', 'Yes')}</md-filled-button>
+        </div>
+      `;
+      document.body.appendChild(pd);
+      pd.querySelector('#kb-pri-no').addEventListener('click', () => { pd.close(); resolve(false); });
+      pd.querySelector('#kb-pri-yes').addEventListener('click', () => { pd.close(); resolve(true); });
+      pd.addEventListener('close', () => document.body.removeChild(pd));
+      pd.show();
+    });
+
+    if (privateChoice) {
+      if (text.startsWith('http://') || text.startsWith('https://')) {
+        cfgSet('kb_custom_type', 'url');
+      } else {
+        cfgSet('kb_custom_type', 'path');
+      }
+      cfgSet('kb_custom_value', text);
+      cfgSet('kb_private', 'true');
+      showToast(t('custom_kb_applied', 'Custom keybox configured'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
+      dialog.close();
+      return;
+    }
+
+    // Not private — detect via catalog
     const detectingToast = showToast(t('custom_kb_detecting', 'Detecting keybox...'), { icon: 'info', type: 'info', autoCloseDelay: 30000 });
 
     try {
       let serial = '';
 
       if (text.startsWith('http://') || text.startsWith('https://')) {
-        // Download to temp, then decode
         const { stdout } = await exec(
           `curl -s ${shellEscape(text)} > /data/local/tmp/_kb_check.xml 2>/dev/null && ` +
           `. ${moddir}/lib/common.sh && decode_keybox_serial /data/local/tmp/_kb_check.xml`
         );
         serial = (stdout || '').trim();
 
-        // Read the serial directly after decoding
         if (!serial) {
-          // Try to decode the downloaded file differently
           const { stdout: s2 } = await exec(
             `. ${moddir}/lib/common.sh && _b64=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /data/local/tmp/_kb_check.xml | head -20 | grep -v 'CERTIFICATE' | tr -d '\\n') && [ -n "$_b64" ] && _hex=$(echo "$_b64" | base64 -d 2>/dev/null | od -v -tx1 | awk 'BEGIN{ORS=""} {for(i=2;i<=NF;i++) printf "%s", $i}') && _parse_serial "$_hex" && echo "$_serial"`
           );
           serial = (s2 || '').trim();
         }
       } else if (text.startsWith('/')) {
-        // Local file — decode directly
         const { stdout } = await exec(
           `. ${moddir}/lib/common.sh && decode_keybox_serial ${shellEscape(text)}`
         );
@@ -451,7 +484,6 @@ async function openCustomKeyboxDialog() {
         }
       }
 
-      // Look up serial in catalog
       let catalogInfo = null;
       if (serial) {
         try {
@@ -464,7 +496,6 @@ async function openCustomKeyboxDialog() {
         }
       }
 
-      // Show detected dialog
       const detectedDialog = document.createElement('md-dialog');
       detectedDialog.innerHTML = `
         <div slot="headline">${t('custom_kb_detected', 'Keybox Detected')}</div>
@@ -478,9 +509,9 @@ async function openCustomKeyboxDialog() {
             </div>
             <md-chip style="--md-chip-label-text-color:${catalogInfo.revoked ? 'var(--md-sys-color-error)' : 'var(--md-sys-color-tertiary)'}">${catalogInfo.revoked ? t('custom_kb_revoked', 'Revoked') : t('custom_kb_active', 'Active')}</md-chip>
           ` : `
-            <div class="li-icon" style="margin:0 auto 8px;background:var(--md-sys-color-surface-container-high)"><md-icon style="color:var(--md-sys-color-on-surface)">lock</md-icon></div>
-            <p style="font-size:0.9375rem;font-weight:500;margin:4px 0">${t('custom_kb_private', 'Private Keybox')}</p>
-            <p style="font-size:0.75rem;color:var(--md-sys-color-on-surface-variant);margin:4px 0">${t('custom_kb_private_desc', 'This keybox is not in the catalog')}</p>
+            <div class="li-icon" style="margin:0 auto 8px"><md-icon>search_off</md-icon></div>
+            <p style="font-size:0.9375rem;font-weight:500;margin:4px 0">${t('custom_kb_not_found', 'Not Found in Catalog')}</p>
+            <p style="font-size:0.75rem;color:var(--md-sys-color-on-surface-variant);margin:4px 0">${t('custom_kb_not_found_desc', 'This keybox could not be matched to any known source')}</p>
           `}
         </div>
         <div slot="actions">
@@ -499,6 +530,7 @@ async function openCustomKeyboxDialog() {
           cfgSet('kb_custom_type', 'path');
         }
         cfgSet('kb_custom_value', text);
+        cfgSet('kb_private', '');
         showToast(t('custom_kb_applied', 'Custom keybox configured'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
         detectedDialog.close();
         dialog.close();
@@ -520,4 +552,99 @@ async function openCustomKeyboxDialog() {
   dialog.show();
 }
 
+function wireBlacklistToggle() {
+  const sw = document.getElementById('blacklist-switch');
+  const editor = document.getElementById('blacklist-editor');
+  const input = document.getElementById('blacklist-input');
+  const saveBtn = document.getElementById('blacklist-save-btn');
+  const resetBtn = document.getElementById('blacklist-reset-btn');
+  if (!sw) return;
+
+  sw.addEventListener('change', async () => {
+    const { exec } = await import('./bridge.js');
+    if (sw.selected) {
+      await exec('mkdir -p /data/adb/Specter && touch /data/adb/Specter/blacklist_enabled');
+      const { loadBlacklistContent } = await import('./device.js');
+      if (input) input.value = await loadBlacklistContent();
+      if (editor) editor.style.display = 'block';
+    } else {
+      await exec('rm -f /data/adb/Specter/blacklist_enabled');
+      if (editor) editor.style.display = 'none';
+    }
+  });
+
+  if (sw.selected && editor) {
+    editor.style.display = 'block';
+  }
+
+  if (saveBtn && input) {
+    saveBtn.addEventListener('click', async () => {
+      const { saveBlacklistContent } = await import('./device.js');
+      await saveBlacklistContent(input.value);
+      showToast('Blacklist saved', { icon: 'check_circle', type: 'success', autoCloseDelay: 2000 });
+    });
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', async () => {
+      const defaults = [
+        'com.android.chrome', 'com.google.android.apps.photos', 'com.google.android.youtube',
+        'com.topjohnwu.magisk', 'io.github.vvb2060.mahoshojo', 'io.github.vvb2060.keyattestation',
+        'io.github.qwq233.keyattestation', 'com.eltavine.duckdetector', 'com.rem01gaming.disclosure',
+        'com.reveny.nativechecker', 'com.reveny.environmentchecker', 'com.reveny.rootchecker',
+        'com.scottyab.rootbeer', 'com.scottyab.rootbeer.sample', 'com.kimchangyoun.rootbeerfresh',
+        'com.kimchangyoun.magiskdetector', 'com.zhenxi.hunter', 'icu.nullptr.nativetest',
+        'icu.nullptr.applistdetector', 'com.byxiaorun.detector', 'com.jrummyapps.rootchecker',
+        'com.smlj.rootcheck', 'com.devadvance.rootcloak', 'com.devadvance.rootcloakplus', 'mmrl'
+      ].join('\n');
+      if (input) input.value = defaults;
+      const { saveBlacklistContent } = await import('./device.js');
+      await saveBlacklistContent(defaults);
+      showToast('Blacklist reset to defaults', { icon: 'check_circle', type: 'success', autoCloseDelay: 2000 });
+    });
+  }
+}
+
+function wireSmartmergeEditor() {
+  const row = document.getElementById('smartmerge-row');
+  const editor = document.getElementById('smartmerge-editor');
+  const input = document.getElementById('smartmerge-input');
+  const saveBtn = document.getElementById('smartmerge-save-btn');
+  if (!row || !editor) return;
+
+  row.addEventListener('click', async () => {
+    const isVisible = editor.style.display !== 'none';
+    if (!isVisible) {
+      const { loadSmartmergeContent } = await import('./device.js');
+      if (input) input.value = await loadSmartmergeContent();
+      editor.style.display = 'block';
+    } else {
+      editor.style.display = 'none';
+    }
+  });
+
+  if (saveBtn && input) {
+    saveBtn.addEventListener('click', async () => {
+      const { saveSmartmergeContent } = await import('./device.js');
+      await saveSmartmergeContent(input.value);
+      showToast('SmartMerge saved', { icon: 'check_circle', type: 'success', autoCloseDelay: 2000 });
+      editor.style.display = 'none';
+    });
+  }
+}
+
+function wireToggles() {
+  const recoverySw = document.getElementById('recovery-switch');
+  if (recoverySw) {
+    recoverySw.addEventListener('change', async () => {
+      const { exec } = await import('./bridge.js');
+      if (recoverySw.selected) {
+        await exec('mkdir -p /data/adb/Specter && touch /data/adb/Specter/twrp');
+      } else {
+        await exec('rm -f /data/adb/Specter/twrp');
+      }
+      showToast(recoverySw.selected ? 'Recovery hiding enabled' : 'Recovery hiding disabled', { icon: 'check_circle', type: 'success', autoCloseDelay: 2000 });
+    });
+  }
+}
 

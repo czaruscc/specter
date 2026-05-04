@@ -1,9 +1,9 @@
-# Yurikey Manager — Architecture
+# Specter — Architecture
 
 ## Philosophy
 
 - **ES modules + Vite** for the WebUI (builds MWC + JS into bundled output)
-- **Runtime bridge detection** — works on KernelSU (`window.ksu`), APatch (identical `window.ksu`), and Magisk via MMRL (`window.YuriKeyHost`). No single-vendor lock-in.
+- **Runtime bridge detection** — works on KernelSU (`window.ksu`), APatch (identical `window.ksu`), and KernelSU/APatch (`window.ksu`). No single-vendor lock-in.
 - **`@material/web` (MWC)** — Google's official Material 3 Web Components
 - **`ksud module config`** instead of `localStorage` (survives app uninstall)
 - **`boot-completed.sh`** for KernelSU/APatch (proper boot event) + **`service.sh` with `sys.boot_completed` polling fallback** for Magisk
@@ -18,7 +18,7 @@
 ## Directory Layout
 
 ```
-yurikey/
+specter/
 ├── .github/workflows/
 │   ├── build-test.yml                    # CI: lint + build + test
 │   └── build-release.yml                 # CI: build, sign, release
@@ -154,7 +154,7 @@ Action button
     → run_device_info "$MODDIR"       (writes webroot/json/info.json)
 
 WebUI button
-  → bridge detection (tries window.ksu → YuriKeyHost → execYurikeyScript)
+  → bridge detection (tries window.ksu → ksu-native → native exec)
   → reads module_paths.json → MODULE.MODDIR
   → spawnScript(scriptName, 'feature')
   → stdout/stderr piped to dialog + history log
@@ -213,20 +213,20 @@ All scripts use `MODDIR=${0%/*}` to locate themselves. The path to `lib/` is rel
 
 | Script location | `$MODDIR` resolves to | Path to `lib/common.sh` |
 |---|---|---|
-| `features/keybox.sh` | `.../Yurikey/features` | `"$MODDIR/../lib/common.sh"` |
-| `orchestrator.sh` | `.../Yurikey` | `"$MODDIR/lib/common.sh"` |
-| `service.sh` | `.../Yurikey` | `"$MODDIR/lib/common.sh"` |
-| `boot-completed.sh` | `.../Yurikey` | `"$MODDIR/lib/common.sh"` |
-| `action.sh` | `.../Yurikey` | `"$MODDIR/lib/common.sh"` |
+| `features/keybox.sh` | `.../Specter/features` | `"$MODDIR/../lib/common.sh"` |
+| `orchestrator.sh` | `.../Specter` | `"$MODDIR/lib/common.sh"` |
+| `service.sh` | `.../Specter` | `"$MODDIR/lib/common.sh"` |
+| `boot-completed.sh` | `.../Specter` | `"$MODDIR/lib/common.sh"` |
+| `action.sh` | `.../Specter` | `"$MODDIR/lib/common.sh"` |
 | `customize.sh` | **N/A — sourced by installer** | Use `$MODPATH` (provided by installer) |
-| `uninstall.sh` | `.../Yurikey` | `"$MODDIR/lib/common.sh"` |
-| `webroot/common/device-info.sh` | `.../Yurikey/webroot/common` | Strips 3 levels to module root, then `lib/common.sh` |
+| `uninstall.sh` | `.../Specter` | `"$MODDIR/lib/common.sh"` |
+| `webroot/common/device-info.sh` | `.../Specter/webroot/common` | Strips 3 levels to module root, then `lib/common.sh` |
 
 ### Feature Script Contract
 
 ```sh
 #!/system/bin/sh
-MODDIR=${0%/*}               # resolves to .../Yurikey/features
+MODDIR=${0%/*}               # resolves to .../Specter/features
 . "$MODDIR/../lib/common.sh" # go up one level to module root, then into lib/
 . "$MODDIR/../lib/paths.sh"
 
@@ -244,7 +244,7 @@ exit 0
 ### Root-Level Script Contract (orchestrator.sh, service.sh, boot-completed.sh, action.sh)
 
 ```sh
-MODDIR=${0%/*}               # resolves to .../Yurikey/
+MODDIR=${0%/*}               # resolves to .../Specter/
 . "$MODDIR/lib/common.sh"    # lib/ is directly under module root
 . "$MODDIR/lib/paths.sh"
 ```
@@ -397,14 +397,14 @@ apply_boot_hardening() {
 ### `module.prop`
 
 ```
-id=Yurikey
-name=Yurikey Manager
+id=Specter
+name=Specter Manager
 version=v4.0.0
 versionCode=400
-author=Yurikey Dev
+author=Specter Dev
 description=A systemless module to get strong integrity so easily
-banner=https://raw.githubusercontent.com/Yurii0307/yurikey/main/doc/banner.webp
-updateJson=https://raw.githubusercontent.com/Yurii0307/yurikey/main/update.json
+banner=https://raw.githubusercontent.com/khx/Specter/main/doc/banner.webp
+updateJson=https://raw.githubusercontent.com/khx/Specter/main/update.json
 ```
 
 ---
@@ -439,7 +439,7 @@ export default defineConfig({
 **`package.json`:**
 ```json
 {
-  "name": "yurikey-module",
+  "name": "specter",
   "private": true,
   "type": "module",
   "scripts": {
@@ -488,7 +488,7 @@ cfg_set()    # Write config: ksud → flat-file fallback
 cfg_delete() # Delete config: ksud → flat-file fallback
 ```
 
-`YURIKEY_CONFIG_DIR="/data/adb/Yurikey/config"` (defined in `paths.sh`).
+`SPECTER_CONFIG_DIR="/data/adb/Specter/config"` (defined in `paths.sh`).
 
 ### `lib/package_list.sh` — App Lists
 
@@ -503,14 +503,14 @@ FIXED_TARGETS    # ~26 fixed target.txt entries with ? for optional
 ### `lib/urls.sh` — Remote URLs
 
 ```sh
-KEYBOX_URL="https://yuribin.netlify.app/key"
-ATTESTATION_URL="https://yuribin.netlify.app/clips/attestation"
-HMA_CONFIG_URL="https://yuribin.netlify.app/clips/config"
-LATEST_KEYBOX_URL="https://yuribin.netlify.app/clips/latest_keybox"
+KEYBOX_URL="https://rawbin.netlify.app/key"
+ATTESTATION_URL="https://rawbin.netlify.app/clips/attestation"
+HMA_CONFIG_URL="https://rawbin.netlify.app/clips/config"
+LATEST_KEYBOX_URL="https://rawbin.netlify.app/clips/latest_keybox"
 GOOGLE_REVOCATION_URL="https://android.googleapis.com/attestation/status?encrypted=1"
 RKA_HOST="rp.mhmrdd.me"
 RKA_TCP=59416
-RKA_TOKEN="${RKA_TOKEN:-yurikey-5b70e270d6d69cd399c59ca3d62ccf6e}"  # overridable via env
+RKA_TOKEN="${RKA_TOKEN:-specter-main}"  # overridable via env
 ```
 
 ### `lib/paths.sh` — Path Constants
@@ -525,7 +525,7 @@ TEE_STATUS="$TRICKY_DIR/tee_status"
 BOOT_HASH_FILE="/data/adb/boot_hash"
 HMA_DIR="/data/user/0/org.frknkrc44.hma_oss/files"
 HMA_FILE="$HMA_DIR/config.json"
-IDFILE="/data/local/tmp/yurid"
+IDFILE="/data/local/tmp/specter_id"
 ```
 
 ---
@@ -536,8 +536,8 @@ IDFILE="/data/local/tmp/yurid"
 
 3-tier fallback:
 1. `window.ksu.exec` → KernelSU/APatch native bridge
-2. `window.YuriKeyHost.execScript` → Magisk via MMRL
-3. `window.execYurikeyScript` → Legacy MMRL bridge
+2. `window.ksu-native.execScript` → Magisk via MMRL
+3. `window.native exec` → Legacy MMRL bridge
 
 Returns `{ stdout, stderr }` with `on('data')` and `on('exit')` event emitters for live terminal output.
 
@@ -644,7 +644,7 @@ return 0
 - name: Verify module structure
   run: test -f Module/module.prop && test -f Module/webroot/index.html
 - name: Check no hardcoded paths
-  run: ! grep -rn "/data/adb/modules/Yurikey" Module/lib/ Module/features/
+  run: ! grep -rn "/data/adb/modules/Specter" Module/lib/ Module/features/
 - name: Check no su -c in features
   run: ! grep -rn "su -c" Module/features/
 ```

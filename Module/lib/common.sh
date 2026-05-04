@@ -1,31 +1,72 @@
-log() { echo "$(date +%Y-%m-%d\ %H:%M:%S) [$1] $2"; }
+ROOT_SOL=""
+
+log() { echo "[$1] $2"; }
 
 die() { log "ERROR" "$1"; exit 1; }
 
 download() {
-    _dl_url="$1" _dl_oldpath="$PATH"
+    _dl_url="$1" _dl_output="$2" _dl_sha256="$3" _dl_oldpath="$PATH"
     PATH="/data/adb/magisk:/data/data/com.termux/files/usr/bin:$PATH"
-    if command -v curl >/dev/null 2>&1; then
-        curl --connect-timeout 10 -Ls "$_dl_url"
-    else
-        wget -T 10 -qO- "$_dl_url"
+    _dl_tmp="" _dl_code=1 _dl_try=0
+
+    if [ -z "$_dl_output" ]; then
+        _dl_tmp=$(mktemp 2>/dev/null || echo "/data/local/tmp/.specter_dl_$$")
+        _dl_output="$_dl_tmp"
     fi
+
+    for _dl_try in 1 2 3; do
+        if command -v curl >/dev/null 2>&1; then
+            curl --connect-timeout 10 -Ls -o "$_dl_output" "$_dl_url" 2>/dev/null && _dl_code=0 && break
+        elif command -v wget >/dev/null 2>&1; then
+            wget -T 10 -qO "$_dl_output" "$_dl_url" 2>/dev/null && _dl_code=0 && break
+        else
+            break
+        fi
+        sleep 1
+    done
+
+    if [ "$_dl_code" -eq 0 ] && [ -n "$_dl_sha256" ]; then
+        _dl_sum=$(sha256sum "$_dl_output" 2>/dev/null | cut -d' ' -f1)
+        if [ "$_dl_sum" != "$_dl_sha256" ]; then
+            rm -f "$_dl_output"
+            PATH="$_dl_oldpath"
+            unset _dl_url _dl_output _dl_sha256 _dl_oldpath _dl_tmp _dl_code _dl_try _dl_sum
+            return 1
+        fi
+    fi
+
+    if [ -n "$_dl_tmp" ] && [ "$_dl_code" -eq 0 ]; then
+        cat "$_dl_tmp"
+        rm -f "$_dl_tmp"
+    fi
+
     PATH="$_dl_oldpath"
-    unset _dl_url _dl_oldpath
+    unset _dl_url _dl_output _dl_sha256 _dl_oldpath _dl_tmp _dl_code _dl_try _dl_sum
+    return $_dl_code
 }
 
 check_network() {
-  _cn_endpoint="https://clients3.google.com/generate_204"
-  _cn_oldpath="$PATH"
-  PATH="/data/adb/magisk:/data/data/com.termux/files/usr/bin:$PATH"
-  if command -v curl >/dev/null 2>&1; then
-    curl --connect-timeout 5 -sI "$_cn_endpoint" >/dev/null 2>&1 && PATH="$_cn_oldpath" && return 0
-  fi
-  if command -v wget >/dev/null 2>&1; then
-    wget -T 5 --spider "$_cn_endpoint" >/dev/null 2>&1 && PATH="$_cn_oldpath" && return 0
-  fi
-  PATH="$_cn_oldpath"
-  return 1
+    _cn_oldpath="$PATH"
+    PATH="/data/adb/magisk:/data/data/com.termux/files/usr/bin:$PATH"
+    _cn_dns="" _cn_endpoint="https://clients3.google.com/generate_204" _cn_retry=0
+
+    for _cn_dns in "1.1.1.1" "8.8.8.8" "9.9.9.9"; do
+        ping -c1 -W2 "$_cn_dns" >/dev/null 2>&1 && PATH="$_cn_oldpath" && unset _cn_oldpath _cn_dns _cn_endpoint _cn_retry && return 0
+    done
+
+    for _cn_retry in 1 2 3; do
+        if command -v curl >/dev/null 2>&1; then
+            curl --connect-timeout 5 -sI "$_cn_endpoint" >/dev/null 2>&1 && PATH="$_cn_oldpath" && unset _cn_oldpath _cn_dns _cn_endpoint _cn_retry && return 0
+        fi
+        if command -v wget >/dev/null 2>&1; then
+            wget -T 5 --spider "$_cn_endpoint" >/dev/null 2>&1 && PATH="$_cn_oldpath" && unset _cn_oldpath _cn_dns _cn_endpoint _cn_retry && return 0
+        fi
+        sleep "$_cn_retry"
+    done
+
+    PATH="$_cn_oldpath"
+    unset _cn_oldpath _cn_dns _cn_endpoint _cn_retry
+    return 1
 }
 
 check_prop() {
@@ -44,9 +85,158 @@ contains_check_prop() {
     return 1
 }
 
-ensure_dir() { mkdir -p "$1" 2>/dev/null; }
+detect_root_solution() {
+    _drs_magisk="" _drs_ksu="" _drs_apatch=""
 
-_escape_json() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
+    if [ -f "/data/adb/ksud" ]; then
+        ROOT_SOL="kernelsu"
+    elif [ -f "/data/adb/apd" ]; then
+        ROOT_SOL="apatch"
+    elif [ -f "/data/adb/magisk" ]; then
+        ROOT_SOL="magisk"
+    else
+        ROOT_SOL="legacy"
+    fi
+
+    if command -v resetprop >/dev/null 2>&1; then
+        :
+    else
+        ROOT_SOL="legacy"
+    fi
+
+    log "ROOT" "Detected root solution: $ROOT_SOL"
+    unset _drs_magisk _drs_ksu _drs_apatch
+}
+
+resetprop_if_diff() {
+    _rid_name="$1" _rid_expected="$2"
+    _rid_current=$(resetprop "$_rid_name" 2>/dev/null || echo "")
+
+    if [ -z "$_rid_current" ] || [ "$_rid_current" != "$_rid_expected" ]; then
+        case "$ROOT_SOL" in
+            legacy) setprop "$_rid_name" "$_rid_expected" 2>/dev/null || true ;;
+            *) resetprop -n "$_rid_name" "$_rid_expected" 2>/dev/null || true ;;
+        esac
+    fi
+
+    unset _rid_name _rid_expected _rid_current
+}
+
+resetprop_if_match() {
+    _rim_name="$1" _rim_contains="$2" _rim_value="$3"
+    _rim_current=$(resetprop "$_rim_name" 2>/dev/null || echo "")
+
+    case "$_rim_current" in
+        *"$_rim_contains"*)
+            case "$ROOT_SOL" in
+                legacy) setprop "$_rim_name" "$_rim_value" 2>/dev/null || true ;;
+                *) resetprop -n "$_rim_name" "$_rim_value" 2>/dev/null || true ;;
+            esac
+            unset _rim_name _rim_contains _rim_value _rim_current
+            return 0
+            ;;
+    esac
+
+    unset _rim_name _rim_contains _rim_value _rim_current
+    return 1
+}
+
+delprop_if_exist() {
+    _dpe_name="$1"
+    _dpe_current=$(resetprop "$_dpe_name" 2>/dev/null || echo "")
+
+    if [ -n "$_dpe_current" ]; then
+        case "$ROOT_SOL" in
+            legacy) setprop "$_dpe_name" "" 2>/dev/null || true ;;
+            *) resetprop --delete "$_dpe_name" 2>/dev/null || true ;;
+        esac
+    fi
+
+    unset _dpe_name _dpe_current
+}
+
+persistprop() {
+    _pp_name="$1" _pp_value="$2"
+    _pp_restore=""
+
+    case "$ROOT_SOL" in
+        legacy) setprop "$_pp_name" "$_pp_value" 2>/dev/null || true ;;
+        *) resetprop -n -p "$_pp_name" "$_pp_value" 2>/dev/null || true ;;
+    esac
+
+    _pp_restore=$(resetprop "$_pp_name" 2>/dev/null || echo "")
+    if [ -n "$_pp_restore" ] && [ -f "/data/adb/modules/Specter/uninstall.sh" ]; then
+        if ! grep -q "resetprop -n -p \"$_pp_name\"" /data/adb/modules/Specter/uninstall.sh 2>/dev/null; then
+            echo "resetprop -n -p \"$_pp_name\" \"$_pp_restore\"" >> /data/adb/modules/Specter/uninstall.sh 2>/dev/null || true
+        fi
+    fi
+
+    unset _pp_name _pp_value _pp_restore
+}
+
+hide_recovery_folders() {
+    [ -f "/data/adb/Specter/twrp" ] && return 0
+
+    _hrf_backup="/data/adb/recovery_backups"
+    _hrf_random="" _hrf_subdirs=0 _hrf_path=""
+
+    for _hrf_folder in TWRP OrangeFox FOX PBRP PitchBlack Recovery; do
+        _hrf_path="/sdcard/$_hrf_folder"
+        [ ! -d "$_hrf_path" ] && continue
+
+        if [ -f "$_hrf_path/.twrps" ]; then
+            rm -f "$_hrf_path/.twrps" 2>/dev/null || {
+                _hrf_random=$(head /dev/urandom 2>/dev/null | tr -dc A-Za-z0-9 | head -c 12)
+                [ -n "$_hrf_random" ] && mv "$_hrf_path" "/sdcard/$_hrf_random" 2>/dev/null
+                continue
+            }
+        fi
+
+        _hrf_path_recurse="$_hrf_path"
+        _hrf_subdirs=$(find "$_hrf_path_recurse" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+
+        if [ "$_hrf_subdirs" -gt 0 ]; then
+            mkdir -p "$_hrf_backup" 2>/dev/null
+            mv "$_hrf_path" "$_hrf_backup/" 2>/dev/null
+        else
+            rm -rf "$_hrf_path" 2>/dev/null
+        fi
+    done
+
+    unset _hrf_backup _hrf_random _hrf_subdirs _hrf_path _hrf_path_recurse _hrf_folder
+}
+
+apply_prop_hardening() {
+    check_prop "ro.build.fingerprint" ""
+    check_prop "ro.boot.vbmeta.device_state" "locked"
+    check_prop "ro.boot.verifiedbootstate" "green"
+    check_prop "ro.boot.flash.locked" "1"
+    check_prop "ro.boot.veritymode" "enforcing"
+    check_prop "ro.boot.warranty_bit" "0"
+    check_prop "ro.warranty_bit" "0"
+    check_prop "ro.debuggable" "0"
+    check_prop "ro.secure" "1"
+    check_prop "ro.adb.secure" "1"
+    check_prop "ro.build.type" "user"
+    check_prop "ro.build.tags" "release-keys"
+    check_prop "ro.system.build.tags" "release-keys"
+    check_prop "ro.vendor.build.tags" "release-keys"
+    resetprop_if_diff "ro.boot.warranty_bit" "0"
+    resetprop_if_diff "ro.vendor.boot.warranty_bit" "0"
+    resetprop_if_diff "ro.vendor.warranty_bit" "0"
+    resetprop_if_diff "ro.warranty_bit" "0"
+    resetprop_if_diff "ro.is_ever_orange" "0"
+
+    for _aph_prop in $(resetprop 2>/dev/null | grep -oE 'ro.*\.build\.type' | grep -v 'ro.build.type'); do
+        resetprop_if_diff "$_aph_prop" "user"
+    done
+
+    for _aph_prop in $(resetprop 2>/dev/null | grep -oE 'ro.*\.build\.tags' | grep -v 'ro.build.tags'); do
+        resetprop_if_diff "$_aph_prop" "release-keys"
+    done
+
+    unset _aph_prop
+}
 
 apply_boot_hardening() {
   settings put global development_settings_enabled 0
@@ -58,6 +248,10 @@ apply_boot_hardening() {
   resetprop --delete persist.service.debuggable 2>/dev/null || true
   resetprop -n persist.sys.developer_options 0
 }
+
+ensure_dir() { mkdir -p "$1" 2>/dev/null; }
+
+_escape_json() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
 
 version_ge() {
   awk -v a="$1" -v b="$2" 'BEGIN {
@@ -122,33 +316,6 @@ decode_keybox_serial() {
   [ -z "$_hex" ] && return 1
   _parse_serial "$_hex" || return 1
   echo "$_serial"
-}
-
-apply_prop_hardening() {
-  check_prop "ro.build.fingerprint" ""
-  check_prop "ro.boot.vbmeta.device_state" "locked"
-  check_prop "ro.boot.verifiedbootstate" "green"
-  check_prop "ro.boot.flash.locked" "1"
-  check_prop "ro.boot.veritymode" "enforcing"
-  check_prop "ro.boot.warranty_bit" "0"
-  check_prop "ro.warranty_bit" "0"
-  check_prop "ro.debuggable" "0"
-  check_prop "ro.secure" "1"
-  check_prop "ro.adb.secure" "1"
-  check_prop "ro.build.type" "user"
-  check_prop "ro.build.tags" "release-keys"
-  check_prop "ro.system.build.tags" "release-keys"
-  check_prop "ro.vendor.build.tags" "release-keys"
-  check_prop "ro.omni.build.type" "user"
-  check_prop "ro.mediatek.platform" ""
-  check_prop "ro.mediatek.chip_ver" ""
-  check_prop "ro.mediatek.version" ""
-  check_prop "ro.mediatek.model" ""
-  check_prop "ro.vendor.mediatek.platform" ""
-  check_prop "ro.vendor.mediatek.chip_ver" ""
-  check_prop "persist.sys.fflag.override.settings_provider_model" ""
-  check_prop "persist.sys.pixelprops.piunormal" ""
-  check_prop "ro.boot.secboot" "enforcing"
 }
 
 find_kmInstallKeybox() {

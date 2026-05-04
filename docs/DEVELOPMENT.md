@@ -1,4 +1,4 @@
-# Development Guide — Yurikey Manager
+# Development Guide — Specter
 
 For full architecture reference, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 
@@ -19,8 +19,8 @@ For full architecture reference, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 3-tier fallback to execute shell commands:
 
 1. `window.ksu.exec` — KernelSU/APatch native bridge
-2. `window.YuriKeyHost.execScript` — Magisk via MMRL
-3. `window.execYurikeyScript` — legacy MMRL fallback
+2. `window.ksu-native.execScript` — Magisk via MMRL
+3. `KernelSU/APatch native bridge` — legacy MMRL fallback
 
 Returns an event emitter with `on('data')` and `on('exit')` for live streaming to the terminal.
 
@@ -80,7 +80,7 @@ The `apply_boot_hardening()` function (in `lib/common.sh`) runs `settings put` a
 
 Dual-layer approach:
 - **KernelSU**: uses `ksud module config get/set/delete`
-- **Magisk/APatch**: falls back to flat files in `/data/adb/Yurikey/config/*.val`
+- **Magisk/APatch**: falls back to flat files in `/data/adb/Specter/config/*.val`
 
 Both layers are controlled by the same `cfg_get`/`cfg_set`/`cfg_delete` API. The WebUI mirrors this via shell `exec()`.
 

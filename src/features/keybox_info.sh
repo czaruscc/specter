@@ -19,7 +19,14 @@ _revoked=false
 if [ -f "$KEYBOX_FILE" ]; then
   _installed=true
 
-  if _serial=$(decode_keybox_serial "$KEYBOX_FILE"); then
+  _is_private=$(cat "$CONFIG_DIR/kb_private.val" 2>/dev/null || echo "false")
+  if [ "$_is_private" = "true" ]; then
+    _source="Private"
+    _text="Keybox"
+    _up_to_date=true
+    _revoked=false
+    log "KEYBOX_INFO" "Private keybox flagged by user"
+  elif _serial=$(decode_keybox_serial "$KEYBOX_FILE"); then
     log "KEYBOX_INFO" "Serial: $_serial"
 
     if check_network; then
@@ -28,7 +35,7 @@ if [ -f "$KEYBOX_FILE" ]; then
 
       if [ -n "$_history_json" ]; then
         # Resolve provider: if auto, use the working entry's source
-        _provider=$(cat "$YURIKEY_CONFIG_DIR/kb_provider.val" 2>/dev/null || echo "auto")
+        _provider=$(cat "$CONFIG_DIR/kb_provider.val" 2>/dev/null || echo "auto")
         if [ "$_provider" = "auto" ]; then
           _provider=$(echo "$_history_json" | grep -o '"working":{[^}]*"source":"[^"]*"' | sed 's/.*"source":"\([^"]*\)".*/\1/')
         fi
@@ -45,9 +52,9 @@ if [ -f "$KEYBOX_FILE" ]; then
           _source_version=$(echo "$_entry" | grep -o '"version":"[^"]*"' | head -1 | sed 's/"version":"//;s/"//')
           _text=$(echo "$_entry" | grep -o '"text":"[^"]*"' | head -1 | sed 's/"text":"//;s/"//')
           _revoked=$(echo "$_entry" | grep -o '"revoked":\(true\|false\)' | head -1 | sed 's/"revoked"://')
-          [ -z "$_source" ] && _source="yuri"
+          [ -z "$_source" ] && _source="unknown"
           [ -z "$_source_version" ] && _source_version="?"
-          [ -z "$_text" ] && _text="$_source_version"
+          [ -z "$_text" ] && _text=""
           [ -z "$_revoked" ] && _revoked=false
           log "KEYBOX_INFO" "Found: source=$_source version=$_source_version text=$_text revoked=$_revoked"
 

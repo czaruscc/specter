@@ -26,13 +26,39 @@ elif [ -d "/data/adb/magisk" ] && [ -f "/data/adb/magisk.db" ]; then
   _root_type="Magisk"
 fi
 
+# Root solution
+. /data/adb/modules/Specter/lib/common.sh 2>/dev/null
+detect_root_solution
+ROOT_SOL=$ROOT_SOL
+
+# Keybox format
+if [ -f "/data/adb/tricky_store/locked.xml" ]; then
+  _keybox_format="locked.xml"
+elif [ -f "/data/adb/tricky_store/keybox.xml" ]; then
+  _keybox_format="keybox.xml"
+else
+  _keybox_format="none"
+fi
+
+# Flags
+_twrp="false"; [ -f "/data/adb/Specter/twrp" ] && _twrp="true"
+_blacklist="false"; [ -f "/data/adb/Specter/blacklist_enabled" ] && _blacklist="true"
 # Output JSON
 cat <<EOF > "$INFO_PATH"
 {
   "android": "$_android_ver",
   "kernel": "$_kernel_ver",
   "root": "$_root_type",
-  "version": "$_version"
+  "root_sol": "$ROOT_SOL",
+  "version": "$_version",
+  "keybox_format": "$_keybox_format",
+  "flags": {
+    "twrp": $_twrp,
+    "blacklist": $_blacklist
+  }
 }
 EOF
-unset _android_ver _kernel_ver _root_type _version
+unset _android_ver _kernel_ver _root_type _version _keybox_format _twrp _blacklist
+
+# Clean up ROOT_SOL variable
+unset ROOT_SOL

@@ -58,6 +58,9 @@ async function loadDeviceInfo() {
   try {
     const data = await fetchDeviceInfo();
     applyDeviceInfo(data);
+    if (data.flags) applyFlags(data.flags);
+    if (data.keybox_format) applyKeyboxFormat(data.keybox_format);
+    applyBootStages(data);
   } catch (e) {
     console.warn('Fetch device info failed:', e);
   }
@@ -69,6 +72,9 @@ async function waitForValidDeviceInfo(maxMs = 6000, intervalMs = 400) {
     try {
       const data = await fetchDeviceInfo();
       applyDeviceInfo(data);
+      if (data.flags) applyFlags(data.flags);
+      if (data.keybox_format) applyKeyboxFormat(data.keybox_format);
+      applyBootStages(data);
       return;
     } catch (e) {
       console.warn('Poll device info failed:', e);
@@ -81,6 +87,45 @@ function applyDeviceInfo(data) {
   setText('android-value', data.android || '—');
   setText('kernel-value', data.kernel || '—');
   setText('root-value', data.root || '—');
+  const rootSolEl = document.getElementById('root-sol-value');
+  if (rootSolEl && data.root_sol) {
+    rootSolEl.textContent = data.root_sol;
+  }
+}
+
+function applyFlags(flags) {
+  if (!flags) return;
+  const recoverySwitch = document.getElementById('recovery-switch');
+  if (recoverySwitch) recoverySwitch.selected = !!flags.twrp;
+  const blacklistSwitch = document.getElementById('blacklist-switch');
+  if (blacklistSwitch) blacklistSwitch.selected = !!flags.blacklist;
+}
+
+function applyKeyboxFormat(format) {
+  const el = document.getElementById('keybox-format');
+  if (!el) return;
+  if (format === 'locked.xml') {
+    el.textContent = 'TEE Sim';
+    el.className = 'keybox-chip keybox-chip--teesim';
+    el.style.display = '';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+function applyBootStages(data) {
+  const bar = document.getElementById('boot-stage-bar');
+  if (!bar) return;
+  if (data.root_sol === "kernelsu" || data.root_sol === "apatch") {
+    bar.style.display = 'flex';
+    document.querySelectorAll('.boot-stage-dot').forEach(el => {
+      if (el.dataset.stage === 'boot-completed' && (data.root_sol === "kernelsu" || data.root_sol === "apatch")) {
+        el.style.color = 'var(--md-sys-color-tertiary)';
+      } else if (el.dataset.stage === 'post-fs-data' || el.dataset.stage === 'service') {
+        el.style.color = 'var(--md-sys-color-tertiary)';
+      }
+    });
+  }
 }
 
 async function loadVersion() {
@@ -141,12 +186,20 @@ function applyKeyboxStatus(data) {
 
   statusEl.style.display = '';
 
+  if (data.source === 'Private') {
+    source.textContent = 'Private Keybox';
+    source.className = 'keybox-chip keybox-chip--neutral';
+    icon.textContent = 'lock';
+    statusEl.style.display = 'none';
+    return;
+  }
+
   if (data.source) {
     const name = data.source.charAt(0).toUpperCase() + data.source.slice(1);
     const label = data.text ? `${name} ${data.text}` : name;
     if (data.up_to_date) {
       source.textContent = label + ' \u00B7 Latest';
-      source.className = 'keybox-chip keybox-chip--yuri';
+      source.className = 'keybox-chip keybox-chip--latest';
       icon.textContent = 'verified_user';
     } else {
       source.textContent = label;
@@ -171,4 +224,30 @@ function applyKeyboxStatus(data) {
 function setText(id, value) {
   const el = document.getElementById(id);
   if (el) el.textContent = value;
+}
+
+export async function loadBlacklistContent() {
+  const { exec } = await getBridge();
+  try {
+    const { stdout } = await exec('cat /data/adb/Specter/blacklist.txt 2>/dev/null || echo ""');
+    return stdout || '';
+  } catch { return ''; }
+}
+
+export async function loadSmartmergeContent() {
+  const { exec } = await getBridge();
+  try {
+    const { stdout } = await exec('cat /sdcard/Specter/customize.txt 2>/dev/null || echo ""');
+    return stdout || '';
+  } catch { return ''; }
+}
+
+export async function saveBlacklistContent(content) {
+  const { exec } = await getBridge();
+  await exec(`mkdir -p /data/adb/Specter && cat > /data/adb/Specter/blacklist.txt <<'EOF'\n${content}\nEOF`);
+}
+
+export async function saveSmartmergeContent(content) {
+  const { exec } = await getBridge();
+  await exec(`mkdir -p /sdcard/Specter && cat > /sdcard/Specter/customize.txt <<'EOF'\n${content}\nEOF`);
 }

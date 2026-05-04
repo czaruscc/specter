@@ -2,14 +2,18 @@ import { CorePalette, Scheme } from '@material/material-color-utilities';
 import { cfgGet, cfgSet } from './cfg.js';
 
 const PRESETS = {
-  ocean:  '#1B6EF3',
-  rose:   '#C2184B',
-  forest: '#1B6E3A',
-  sunset: '#E65100',
-  violet: '#6750A4',
+  blue:   '#1157CE',
+  yellow: '#8F4E06',
+  red:    '#B3251E',
+  purple: '#7438D2',
+  green:  '#006C35',
+  orange: '#9A4600',
+  pink:   '#B60D6E',
+  cyan:   '#00687C',
+  grey:   '#5E5E5E',
 };
 
-let currentPreset = 'ocean';
+let currentPreset = 'blue';
 let currentSeed = null;
 
 export async function initTheme(savedMode) {
@@ -18,6 +22,7 @@ export async function initTheme(savedMode) {
   const mode = savedMode || 'dark';
 
   await customElements.whenDefined('md-filter-chip');
+  await customElements.whenDefined('md-outlined-segmented-button');
   document.querySelectorAll('.preset-chip').forEach(chip => {
     chip.selected = chip.dataset.preset === preset;
   });
@@ -76,7 +81,7 @@ async function applyMonetPreset(mode) {
     if (seed) {
       cfgSet('monet_seed', seed);
     } else {
-      seed = PRESETS.ocean;
+      seed = PRESETS.blue;
     }
   }
   currentSeed = seed;

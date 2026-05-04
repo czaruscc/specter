@@ -8,6 +8,10 @@ A systemless module to achieve and maintain device integrity — keybox manageme
 
 [Download](https://github.com/khx/specter/releases/latest)
 
+## Background
+
+Specter is a fork of Yurikey, a project I originally authored. After transferring ownership, the code quality declined and the project shifted away from what it was meant to be — a clean, free module for the community. This fork restores that vision: clean architecture, proper error handling, support for multiple keybox sources, and zero business agenda. Donations are appreciated but never the goal.
+
 ---
 
 ## How it works

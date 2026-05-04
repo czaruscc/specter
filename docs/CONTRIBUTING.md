@@ -1,10 +1,10 @@
-# Contributing to Yurikey Manager
+# Contributing to Specter
 
 ## Development Setup
 
 ```sh
-git clone https://github.com/Yurii0307/yurikey.git
-cd yurikey
+git clone https://github.com/khx/specter
+cd specter
 npm ci
 ```
 

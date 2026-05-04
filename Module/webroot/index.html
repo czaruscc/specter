@@ -25,9 +25,12 @@
       document.documentElement.style.colorScheme = resolved;
     })();
   </script>
-  <script type="module" crossorigin src="./assets/index-y67Mp9go.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/utils-rh5jpaLW.js">
-  <link rel="stylesheet" crossorigin href="./assets/index-AIU2D_Nn.css">
+  <script type="module" crossorigin src="./assets/index-ZkVX3Lt3.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/rolldown-runtime-lhHHWwHU.js">
+  <link rel="modulepreload" crossorigin href="./assets/utils-DPEHHfd8.js">
+  <link rel="modulepreload" crossorigin href="./assets/bridge-BgDhiyaB.js">
+  <link rel="modulepreload" crossorigin href="./assets/terminal-DvpJLPN5.js">
+  <link rel="stylesheet" crossorigin href="./assets/index-Dgax9Pbo.css">
 </head>
 <body>
   <div class="app-layout">
@@ -55,6 +58,7 @@
                 <div class="keybox-badges">
                   <span id="keybox-source" class="keybox-chip">—</span>
                   <span id="keybox-status" class="keybox-chip">—</span>
+                  <span id="keybox-format" class="keybox-chip" style="display:none">—</span>
                 </div>
               </div>
               <md-icon class="hero-card__action-icon" aria-label="History">history</md-icon>
@@ -104,6 +108,14 @@
               <p class="md-typescale-title-medium info-card__value" id="root-value">—</p>
             </md-filled-card>
 
+          </div>
+
+          <div id="boot-stage-bar" class="boot-stage-bar" style="display:none;margin-top:8px">
+            <span class="boot-stage-dot" data-stage="post-fs-data">post-fs-data</span>
+            <span class="boot-stage-sep">·</span>
+            <span class="boot-stage-dot" data-stage="service">service</span>
+            <span class="boot-stage-sep">·</span>
+            <span class="boot-stage-dot" data-stage="boot-completed">boot-completed</span>
           </div>
 
         </section>
@@ -195,6 +207,50 @@
             </div>
           </div>
 
+          <h2 class="list-title" data-i18n="menu_blacklist">Blacklist</h2>
+          <div class="list-container">
+            <div class="list-item list-item--toggle" id="blacklist-toggle-row">
+              <div class="li-icon"><md-icon aria-hidden="true">block</md-icon></div>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="menu_blacklist_toggle">Filter Blacklisted Apps</div>
+                <span class="supporting-text" data-i18n="menu_blacklist_toggle_desc">Exclude detector apps from target.txt generation</span>
+              </div>
+              <div class="spacer"></div>
+              <md-switch icons id="blacklist-switch"></md-switch>
+              <md-ripple></md-ripple>
+            </div>
+          </div>
+          <div id="blacklist-editor" class="blacklist-editor" style="display:none">
+            <md-outlined-text-field id="blacklist-input" type="textarea" rows="6" style="width:100%;--md-outlined-text-field-container-shape:14px">
+              <div slot="headline" data-i18n="menu_blacklist_edit">Edit blacklist (one package per line)</div>
+            </md-outlined-text-field>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <md-filled-tonal-button id="blacklist-save-btn" style="flex:1"><span data-i18n="dialog_save">Save</span></md-filled-tonal-button>
+              <md-outlined-button id="blacklist-reset-btn" style="flex:1"><span data-i18n="dialog_reset_defaults">Reset Defaults</span></md-outlined-button>
+            </div>
+          </div>
+
+          <h2 class="list-title" data-i18n="menu_smartmerge">SmartMerge</h2>
+          <div class="list-container">
+            <div class="list-item" id="smartmerge-row">
+              <div class="li-icon"><md-icon aria-hidden="true">merge_type</md-icon></div>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="menu_smartmerge_desc">Customize Per-App Targeting</div>
+                <span class="supporting-text" data-i18n="menu_smartmerge_desc_sub">Edit /sdcard/Specter/customize.txt for per-app suffix control (!, ?, or bare)</span>
+              </div>
+              <div class="spacer"></div>
+              <md-ripple></md-ripple>
+            </div>
+          </div>
+          <div id="smartmerge-editor" class="smartmerge-editor" style="display:none">
+            <md-outlined-text-field id="smartmerge-input" type="textarea" rows="4" style="width:100%;--md-outlined-text-field-container-shape:14px">
+              <div slot="headline" data-i18n="menu_smartmerge_hint">One package per line. Suffix with ! (force) or ? (conditional). First line can be !, ?, or #disable</div>
+            </md-outlined-text-field>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <md-filled-tonal-button id="smartmerge-save-btn" style="flex:1"><span data-i18n="dialog_save">Save</span></md-filled-tonal-button>
+            </div>
+          </div>
+
         </section>
 
         <section id="advanced-page" hidden>
@@ -212,33 +268,11 @@
               <md-ripple></md-ripple>
             </div>
 
-            <div class="list-item" data-script="lsposed.sh" data-destructive>
-              <div class="li-icon"><md-icon aria-hidden="true">code_off</md-icon></div>
-              <div class="list-item-content">
-                <div class="toggle-text" data-i18n="advance_fix_detect_lsposed">Fix LSPosed Detection</div>
-                <span class="supporting-text" data-i18n="advance_fix_lsposed_desc">Deletes all base.odex files from /data/app</span>
-              </div>
-              <div class="spacer"></div>
-              <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
-              <md-ripple></md-ripple>
-            </div>
-
             <div class="list-item" data-script="pif2.sh">
               <div class="li-icon"><md-icon aria-hidden="true">bug_report</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="advance_fix_detect_pif">Fix PIF Detection</div>
                 <span class="supporting-text" data-i18n="advance_fix_pif_desc">Removes PIF-related properties via resetprop</span>
-              </div>
-              <div class="spacer"></div>
-              <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
-              <md-ripple></md-ripple>
-            </div>
-
-            <div class="list-item" data-script="twrp.sh" data-destructive>
-              <div class="li-icon"><md-icon aria-hidden="true">folder_delete</md-icon></div>
-              <div class="list-item-content">
-                <div class="toggle-text" data-i18n="advance_fix_detect_recovery_file">Fix Recovery File Detection</div>
-                <span class="supporting-text" data-i18n="advance_fix_recovery_desc">Deletes /sdcard/TWRP directory</span>
               </div>
               <div class="spacer"></div>
               <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
@@ -253,6 +287,31 @@
               </div>
               <div class="spacer"></div>
               <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
+              <md-ripple></md-ripple>
+            </div>
+
+            <div class="list-item" data-script="widevine.sh">
+              <div class="li-icon"><md-icon aria-hidden="true">layers</md-icon></div>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="advance_wdevinel1">Fix Widevine L1</div>
+                <span class="supporting-text" data-i18n="advance_wdevinel1_desc">Installs attestation keys for Widevine L1 DRM (Qualcomm devices only)</span>
+              </div>
+              <div class="spacer"></div>
+              <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
+              <md-ripple></md-ripple>
+            </div>
+          </div>
+
+          <h2 class="list-title" data-i18n="advance_toggles_title">Boot Behavior</h2>
+          <div class="list-container">
+            <div class="list-item list-item--toggle" id="recovery-toggle-row">
+              <div class="li-icon"><md-icon aria-hidden="true">folder_off</md-icon></div>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="advance_toggle_recovery">Auto-Hide Recovery Folders</div>
+                <span class="supporting-text" data-i18n="advance_toggle_recovery_desc">Hides TWRP, OrangeFox, FOX, PBRP, PitchBlack, Recovery at boot</span>
+              </div>
+              <div class="spacer"></div>
+              <md-switch icons id="recovery-switch"></md-switch>
               <md-ripple></md-ripple>
             </div>
           </div>
@@ -270,7 +329,7 @@
               <md-ripple></md-ripple>
             </div>
 
-            <div class="list-item" data-script="znctl.sh">
+            <div class="list-item" data-script="zygisk_next.sh">
               <div class="li-icon"><md-icon aria-hidden="true">tune</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="advance_set_zygisk_next_configs">Set Zygisk Next Configs</div>
@@ -295,22 +354,8 @@
             <div class="list-item" data-script="rka.sh">
               <div class="li-icon"><md-icon aria-hidden="true">cloud_sync</md-icon></div>
               <div class="list-item-content">
-                <div class="toggle-text" data-i18n="advance_upd_yurirka">Update RKA Config</div>
-                <span class="supporting-text" data-i18n="advance_upd_rka_desc">Provisions Remote Key Attestation config for PassIt</span>
-              </div>
-              <div class="spacer"></div>
-              <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
-              <md-ripple></md-ripple>
-            </div>
-          </div>
-
-          <h2 class="list-title" data-i18n="advance_tee_section">Fix TEE: OnePlus, RedMagic, Realme, Oppo…</h2>
-          <div class="list-container">
-            <div class="list-item" data-script="widevine.sh">
-              <div class="li-icon"><md-icon aria-hidden="true">layers</md-icon></div>
-              <div class="list-item-content">
-                <div class="toggle-text" data-i18n="advance_wdevinel1">Fix Widevine L1</div>
-                <span class="supporting-text" data-i18n="advance_wdevinel1_desc">Copies FixWidevineL1 files and runs KmInstallKeybox vendor binary</span>
+                <div class="toggle-text" data-i18n="advance_upd_rka">Update RKA Config</div>
+                <span class="supporting-text" data-i18n="advance_upd_rka_desc">Provisions Remote Key Attestation config</span>
               </div>
               <div class="spacer"></div>
               <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
@@ -352,42 +397,38 @@
 
             <p class="md-typescale-label-large settings-sublabel" data-i18n="settings_color_preset">Color</p>
             <div id="preset-chips" class="preset-chips">
-              <md-filter-chip id="preset-ocean" label="Ocean" data-preset="ocean" class="preset-chip">
-                <span slot="icon" class="preset-dot" style="background:#1B6EF3"></span>
+              <md-filter-chip id="preset-blue" label="Blue" data-preset="blue" class="preset-chip">
+                <span slot="icon" class="preset-dot" style="background:#1157CE"></span>
               </md-filter-chip>
-              <md-filter-chip id="preset-rose" label="Rose" data-preset="rose" class="preset-chip">
-                <span slot="icon" class="preset-dot" style="background:#C2184B"></span>
+              <md-filter-chip id="preset-yellow" label="Yellow" data-preset="yellow" class="preset-chip">
+                <span slot="icon" class="preset-dot" style="background:#8F4E06"></span>
               </md-filter-chip>
-              <md-filter-chip id="preset-forest" label="Forest" data-preset="forest" class="preset-chip">
-                <span slot="icon" class="preset-dot" style="background:#1B6E3A"></span>
+              <md-filter-chip id="preset-red" label="Red" data-preset="red" class="preset-chip">
+                <span slot="icon" class="preset-dot" style="background:#B3251E"></span>
               </md-filter-chip>
-              <md-filter-chip id="preset-sunset" label="Sunset" data-preset="sunset" class="preset-chip">
-                <span slot="icon" class="preset-dot" style="background:#E65100"></span>
+              <md-filter-chip id="preset-purple" label="Purple" data-preset="purple" class="preset-chip">
+                <span slot="icon" class="preset-dot" style="background:#7438D2"></span>
               </md-filter-chip>
-              <md-filter-chip id="preset-violet" label="Violet" data-preset="violet" class="preset-chip">
-                <span slot="icon" class="preset-dot" style="background:#6750A4"></span>
+              <md-filter-chip id="preset-green" label="Green" data-preset="green" class="preset-chip">
+                <span slot="icon" class="preset-dot" style="background:#006C35"></span>
+              </md-filter-chip>
+              <md-filter-chip id="preset-orange" label="Orange" data-preset="orange" class="preset-chip">
+                <span slot="icon" class="preset-dot" style="background:#9A4600"></span>
+              </md-filter-chip>
+              <md-filter-chip id="preset-pink" label="Pink" data-preset="pink" class="preset-chip">
+                <span slot="icon" class="preset-dot" style="background:#B60D6E"></span>
+              </md-filter-chip>
+              <md-filter-chip id="preset-cyan" label="Cyan" data-preset="cyan" class="preset-chip">
+                <span slot="icon" class="preset-dot" style="background:#00687C"></span>
+              </md-filter-chip>
+              <md-filter-chip id="preset-grey" label="Grey" data-preset="grey" class="preset-chip">
+                <span slot="icon" class="preset-dot" style="background:#5E5E5E"></span>
               </md-filter-chip>
               <md-filter-chip id="preset-monet" label="System" data-preset="monet" data-i18n="theme_preset_monet" selected class="preset-chip">
-                <span slot="icon" class="preset-dot" style="background:linear-gradient(135deg,#1B6EF3 25%,#C2184B 50%,#E65100 75%,#6750A4)"></span>
+                <span slot="icon" class="preset-dot" style="background:linear-gradient(135deg,#1157CE 11%,#8F4E06 22%,#B3251E 33%,#7438D2 44%,#006C35 55%,#9A4600 66%,#B60D6E 77%,#00687C 88%,#5E5E5E)"></span>
               </md-filter-chip>
             </div>
 
-          </md-outlined-card>
-
-          <h2 class="section-pill" data-i18n="settings_clock_format">Clock Format</h2>
-          <md-outlined-card class="settings-card">
-            <md-outlined-select id="clock-format-select">
-              <md-icon slot="leading-icon" aria-hidden="true">schedule</md-icon>
-              <md-select-option value="auto">
-                <div slot="headline" data-i18n="clock_format_auto">Auto (Device)</div>
-              </md-select-option>
-              <md-select-option value="24h">
-                <div slot="headline" data-i18n="clock_format_24h">24-hour</div>
-              </md-select-option>
-              <md-select-option value="12h">
-                <div slot="headline" data-i18n="clock_format_12h">12-hour (AM/PM)</div>
-              </md-select-option>
-            </md-outlined-select>
           </md-outlined-card>
 
           <h2 class="section-pill" data-i18n="settings_advanced">Advanced</h2>
@@ -423,7 +464,7 @@
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03c.89 1.5 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.94c0-1.09.39-1.98 1.03-2.68c-.1-.25-.45-1.27.1-2.64c0 0 .84-.27 2.75 1.02c.8-.22 1.65-.33 2.5-.33s1.7.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.37.2 2.39.1 2.64c.64.7 1.03 1.59 1.03 2.68c0 3.84-2.34 4.68-4.57 4.93c.36.31.68.92.68 1.85v2.75c0 .27.16.59.67.5A10 10 0 0 0 22 12c0-5.52-4.48-10-10-10"/></svg>
                 </span>
               </md-filled-tonal-button>
-              <md-filled-tonal-button data-url="https://t.me/yuriiroot">
+              <md-filled-tonal-button data-url="https://t.me/dpejoh">
                 <span data-i18n="update_telegram">Join Telegram</span>
                 <span slot="icon" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.2.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>

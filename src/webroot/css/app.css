@@ -149,7 +149,7 @@ section:not([hidden]) {
   line-height: 1.4;
 }
 
-.keybox-chip--yuri {
+.keybox-chip--latest {
   background: var(--md-sys-color-primary-container);
   color: var(--md-sys-color-on-primary-container);
 }

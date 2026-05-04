@@ -1,4 +1,4 @@
-# AI Agent Instructions — Yurikey Manager
+# AI Agent Instructions — Specter
 
 ## Build & Lint
 
@@ -73,4 +73,4 @@ Types: `fix:`, `feat:`, `refactor:`, `chore:`, `docs:`, `test:`
 - **NEVER** edit `Module/` or `module/` — these are build artifacts
 - **NEVER** commit secrets, API tokens, or keybox files
 - **NEVER** use `su -c` in feature scripts — module already runs as root
-- **NEVER** hardcode `/data/adb/modules/Yurikey` — use `$MODDIR`
+- **NEVER** hardcode `/data/adb/modules/Specter` — use `$MODDIR`

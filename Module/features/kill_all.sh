@@ -7,7 +7,7 @@ MODDIR=${0%/*}
 log "KILL_ALL" "Start"
 
 _count=0
-ALL_PKGS="$DETECTOR_APPS $GMS_APPS"
+ALL_PKGS="$DETECTOR_APPS $GMS_APPS $REMOTE_CONTROL_APPS $TOOL_APPS"
 _installed_pkgs=$(pm list packages 2>/dev/null)
 
 for pkg in $ALL_PKGS; do

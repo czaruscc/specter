@@ -30,8 +30,6 @@ function scriptDir(type) {
 
 function getExecutor() {
   if (typeof window.ksu?.exec === 'function') return 'ksu';
-  if (typeof window.YuriKeyHost?.execScript === 'function') return 'mmrl';
-  if (typeof window.execYurikeyScript === 'function') return 'legacy-mmrl';
   return null;
 }
 
@@ -64,13 +62,7 @@ export function runScript(scriptName, type = 'feature') {
     };
 
     try {
-      if (executor === 'mmrl') {
-        window.YuriKeyHost.execScript(`sh ${shellEscape(scriptPath)}`, '{}', cbName);
-      } else if (executor === 'legacy-mmrl') {
-        window.execYurikeyScript(scriptPath, cbName);
-      } else {
-        window.ksu.exec(`sh ${shellEscape(scriptPath)}`, '{}', cbName);
-      }
+      window.ksu.exec(`sh ${shellEscape(scriptPath)}`, '{}', cbName);
     } catch (err) { cleanup(); reject(err); }
   });
 }
@@ -102,13 +94,7 @@ function _runScriptRaw(command) {
       }
     };
     try {
-      if (executor === 'mmrl') {
-        window.YuriKeyHost.execScript(command, '{}', cbName);
-      } else if (executor === 'legacy-mmrl') {
-        window.execYurikeyScript(command, cbName);
-      } else {
-        window.ksu.exec(command, '{}', cbName);
-      }
+      window.ksu.exec(command, '{}', cbName);
     } catch (e) { delete window[cbName]; reject(e); }
   });
 }
