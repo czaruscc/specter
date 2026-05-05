@@ -3,13 +3,19 @@ import { getFriendlyNames } from './state.js';
 import { STORAGE_KEY, MAX_ENTRIES } from './constants.js';
 import { getTranslation } from './i18n.js';
 
-function getHistory() {
+interface HistoryEntry {
+  script: string;
+  output: string;
+  time: string;
+}
+
+function getHistory(): HistoryEntry[] {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
   } catch (e) { console.warn('Failed to parse history:', e); return []; }
 }
 
-export function addEntry(scriptName, output) {
+export function addEntry(scriptName: string, output: string) {
   if (typeof output !== 'string') output = String(output || '');
   if (!output.trim()) return;
   const entries = getHistory();
@@ -22,18 +28,18 @@ function clearHistory() {
   try { localStorage.removeItem(STORAGE_KEY); } catch (e) { console.warn('Failed to clear history:', e); }
 }
 
-function formatTime(isoString) {
+function formatTime(isoString: string): string {
   try {
     const date = new Date(isoString);
     const now = new Date();
-    const diff = now - date;
+    const diff = now.getTime() - date.getTime();
     const oneDay = 86400000;
     const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 
     if (diff < oneDay && date.getDate() === now.getDate()) {
       return 'Today at ' + timeStr;
     }
-    if (diff < 2 * oneDay && date.getDate() === new Date(now - oneDay).getDate()) {
+    if (diff < 2 * oneDay && date.getDate() === new Date(now.getTime() - oneDay).getDate()) {
       return 'Yesterday at ' + timeStr;
     }
     if (date.getFullYear() === now.getFullYear()) {
@@ -45,7 +51,7 @@ function formatTime(isoString) {
   }
 }
 
-function isErrorOutput(output) {
+function isErrorOutput(output: string): boolean {
   return output.includes('[!]') || output.toLowerCase().includes('error');
 }
 
@@ -66,7 +72,7 @@ export async function openRecentActivity(devMode = false) {
       </div>
     `;
     document.body.appendChild(dialog);
-    dialog.querySelector('.dialog-action-close').addEventListener('click', () => dialog.close());
+    dialog.querySelector('.dialog-action-close')!.addEventListener('click', () => dialog.close());
     dialog.addEventListener('close', () => document.body.removeChild(dialog));
     dialog.show();
     return;
@@ -109,18 +115,18 @@ export async function openRecentActivity(devMode = false) {
       const copyBtn = card.querySelector('.activity-card__copy-btn');
 
       function toggle() {
-        const isOpen = body.classList.toggle('open');
-        chevron.classList.toggle('expanded', isOpen);
+        const isOpen = body!.classList.toggle('open');
+        chevron!.classList.toggle('expanded', isOpen);
       }
 
-      header.addEventListener('click', () => toggle());
+      header!.addEventListener('click', () => toggle());
 
-      copyBtn.addEventListener('click', () => {
+      copyBtn!.addEventListener('click', () => {
         navigator.clipboard.writeText(entry.output).then(() => {
-          copyBtn.textContent = 'Copied!';
-          setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+          copyBtn!.textContent = 'Copied!';
+          setTimeout(() => { copyBtn!.textContent = 'Copy'; }, 2000);
         }).catch(() => {
-          copyBtn.textContent = 'Failed';
+          copyBtn!.textContent = 'Failed';
         });
       });
     }
@@ -137,15 +143,15 @@ export async function openRecentActivity(devMode = false) {
       <md-text-button class="dialog-action-close">${getTranslation('dialog_close') || 'Close'}</md-text-button>
     </div>
   `;
-  dialog.querySelector('[slot="content"]').appendChild(list);
+  dialog.querySelector('[slot="content"]')!.appendChild(list);
   document.body.appendChild(dialog);
 
-  dialog.querySelector('.dialog-action-clear').addEventListener('click', async () => {
+  dialog.querySelector('.dialog-action-clear')!.addEventListener('click', async () => {
     clearHistory();
     dialog.close();
     setTimeout(() => openRecentActivity(), 100);
   });
-  dialog.querySelector('.dialog-action-close').addEventListener('click', () => dialog.close());
+  dialog.querySelector('.dialog-action-close')!.addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => document.body.removeChild(dialog));
   dialog.show();
 }

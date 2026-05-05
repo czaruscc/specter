@@ -8,11 +8,11 @@ const ALLOWED_HOSTS = [
 
 export function initRedirect() {
   document.querySelectorAll('[data-url]').forEach(el => {
-    el.addEventListener('click', () => openUrl(el.dataset.url));
+    el.addEventListener('click', () => openUrl((el as HTMLElement).dataset.url || ''));
   });
 }
 
-export function openUrl(rawUrl) {
+export function openUrl(rawUrl: string) {
   let url;
   try {
     url = new URL(rawUrl);

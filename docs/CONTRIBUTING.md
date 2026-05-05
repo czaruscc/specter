@@ -17,11 +17,17 @@ npm run build
 ```
 
 This runs:
-1. `vite build` — bundles WebUI (MWC + JS + CSS) into `Module/webroot/`
+1. `vite build` - bundles WebUI (MWC + TS + CSS) into `Module/webroot/`
 2. Copies shell scripts, libs, features, pipelines from `src/` to `Module/`
 3. Zips `Module/` → `module.zip`
 
-Output: `module.zip` — flashable Magisk/KernelSU/APatch module.
+Output: `module.zip` - flashable Magisk/KernelSU/APatch module.
+
+Run the TypeScript type checker before committing:
+
+```sh
+npx tsc --noEmit
+```
 
 ## WebUI Development
 
@@ -59,7 +65,7 @@ All executable scripts use `set -e` for early error detection. Library scripts (
 ## Pull Request Process
 
 1. Branch from `main`
-2. Make changes only in `src/` — never `Module/` or `module/`
-3. Run `npm run build` and verify it succeeds (zero warnings)
+2. Make changes only in `src/` - never `Module/` or `module/`
+3. Run `npx tsc --noEmit` and `npm run build` - both must pass with zero errors
 4. Open a PR against the `main` branch
 5. Include a clear description of what the change does

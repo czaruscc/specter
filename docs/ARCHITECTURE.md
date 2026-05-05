@@ -1,17 +1,17 @@
-# Specter — Architecture
+# Specter - Architecture
 
 ## Philosophy
 
-- **ES modules + Vite** for the WebUI (builds MWC + JS into bundled output)
-- **Runtime bridge detection** — works on KernelSU, APatch (identical `window.ksu`), and Magisk. No single-vendor lock-in.
-- **`@material/web` (MWC)** — Google's official Material 3 Web Components
+- **TypeScript + Vite** for the WebUI (builds MWC + TS into bundled JS)
+- **Runtime bridge detection** - works on KernelSU, APatch (identical `window.ksu`), and Magisk. No single-vendor lock-in.
+- **`@material/web` (MWC)** - Google's official Material 3 Web Components
 - **`ksud module config`** instead of `localStorage` (survives app uninstall)
 - **`boot-completed.sh`** for KernelSU/APatch (proper boot event) + **`service.sh` with `sys.boot_completed` polling fallback** for Magisk
-- **`config_env.sh`** — shared config persistence layer with `ksud` + file fallback (works on Magisk/APatch/KSU)
-- **Zero CDN dependencies at runtime** — everything bundled locally by Vite
-- **Single shared shell library** (`lib/`) — eliminates all copy-paste
+- **`config_env.sh`** - shared config persistence layer with `ksud` + file fallback (works on Magisk/APatch/KSU)
+- **Zero CDN dependencies at runtime** - everything bundled locally by Vite
+- **Single shared shell library** (`lib/`) - eliminates all copy-paste
 - **Single orchestrator** for both action button and WebUI
-- **`$MODDIR` everywhere** — no hardcoded paths
+- **`$MODDIR` everywhere** - no hardcoded paths
 
 ---
 
@@ -40,12 +40,13 @@ specter/
 │   │   │                                 #   apply_boot_hardening, read_vbmeta,
 │   │   │                                 #   version_ge, run_device_info,
 │   │   │                                 #   _parse_serial, decode_keybox_serial,
-│   │   │                                 #   find_kmInstallKeybox, resolve_module_root
-│   │   ├── config_env.sh                 #   Config persistence: ksud module config with file fallback
+│   │   │                                 #   find_kmInstallKeybox, resolve_module_root,
+│   │   │                                 #   check_google_revocation
+│   │   ├── config_env.sh                 #   Config persistence: ksud module config with file fallback (cfg_get, cfg_set)
 │   │   └── package_list.sh              #   Fixed target.txt entries + all app lists + GMS_KILL_LIST
 │   │
 │   ├── features/                         # One file = one feature, one responsibility
-│   │   ├── keybox.sh                     #   Download & install keybox
+│   │   ├── keybox.sh                     #   Download, validate (keys + ID), check Google revocation, install keybox
 │   │   ├── target.sh                     #   Generate target.txt
 │   │   ├── security_patch.sh             #   Spoof security patch date
 │   │   ├── boot_hash.sh                  #   Set verified boot hash
@@ -60,7 +61,7 @@ specter/
 │   │   ├── widevine.sh                   #   Fix Widevine L1
 │   │   ├── lsposed.sh                    #   Clean LSPosed ODEX traces
 │   │   ├── twrp.sh                       #   Delete TWRP folder
-│   │   └── keybox_info.sh               #   Check keybox status/revocation
+│   │   └── keybox_info.sh               #   Check keybox status (Google revocation + catalog identity)
 │   │
 │   ├── orchestrator.sh                   # Single entry point for all pipelines
 │   │
@@ -68,10 +69,10 @@ specter/
 │   │   ├── full_integrity                #   gms → target → security_patch → boot_hash → keybox → pif?
 │   │   └── root_hide                     #   hma → zygisk_next?
 │   │
-│   ├── customize.sh                      # Installation (sourced by installer — uses $MODPATH)
+│   ├── customize.sh                      # Installation (sourced by installer - uses $MODPATH)
 │   ├── service.sh                        # Boot-time property spoofer (late_start service)
 │   ├── boot-completed.sh                 # KernelSU/APatch only: runs at ACTION_BOOT_COMPLETED
-│   ├── uninstall.sh                      # Clean removal (sourced — uses $MODDIR from $0)
+│   ├── uninstall.sh                      # Clean removal (sourced - uses $MODDIR from $0)
 │   ├── action.sh                         # Thin wrapper → calls orchestrator.sh
 │   │
 │   ├── rka/                              # Remote Key Attestation subsystem
@@ -79,30 +80,31 @@ specter/
 │   │
 │   └── webroot/                          # WebUI SOURCE (Vite bundles this → Module/webroot/)
 │       ├── config.json                   # KernelSU WebUI config (title, icon)
-│       ├── index.html                    # Single HTML — MWC components declared here
+│       ├── index.html                    # Single HTML - MWC components declared here
 │       ├── css/
 │       │   └── app.css                   # MWC theme vars + page layout
-│       ├── js/                           # 20 JS modules
-│       │   ├── app.js                    # Main entry — wires UI, navigation, actions
-│       │   ├── bridge.js                 # Bridge detection (ksu.exec), spawnScript, runScript
-│       │   ├── cfg.js                    # Config persistence (ksud + file fallback)
-│       │   ├── clock.js                  # Clock display
-│       │   ├── constants.js              # Shared constants (timeout, URLs, storage keys)
-│       │   ├── contributors.js           # Contributor grid
-│       │   ├── dev-mock.js               # Dev mock for browser testing
-│       │   ├── device.js                 # Device info + keybox status refresh
-│       │   ├── dialog.js                 # Error/simple dialog helpers
-│       │   ├── file-browser.js           # File picker for custom keybox
-│       │   ├── history.js                # Script output history viewer
-│       │   ├── i18n.js                   # Async translation loader
-│       │   ├── material.js               # MWC component imports
-│       │   ├── network.js                # Online/offline detection
-│       │   ├── redirect.js               # URL opener (injection-safe)
-│       │   ├── state.js                  # Friendly name mappings for scripts
-│       │   ├── terminal.js               # Live terminal output
-│       │   ├── theme.js                  # Theme engine (monet + presets)
-│       │   ├── toast.js                  # Toast notifications
-│       │   └── utils.js                  # escapeHtml(), shellEscape()
+│       ├── js/                           # 21 TypeScript modules (Vite-bundled)
+│       │   ├── app.ts                    # Main entry - wires UI, navigation, actions
+│       │   ├── bridge.ts                 # Bridge detection (ksu.exec), spawnScript, runScript
+│       │   ├── cfg.ts                    # Config persistence (ksud + file fallback)
+│       │   ├── clock.ts                  # Clock display
+│       │   ├── constants.ts              # Shared constants (timeout, URLs, storage keys)
+│       │   ├── contributors.ts           # Contributor grid
+│       │   ├── dev-mock.ts               # Dev mock for browser testing
+│       │   ├── device.ts                 # Device info + keybox status refresh
+│       │   ├── dialog.ts                 # Error/simple dialog helpers
+│       │   ├── file-browser.ts           # File picker for custom keybox
+│       │   ├── history.ts                # Script output history viewer
+│       │   ├── i18n.ts                   # Async translation loader
+│       │   ├── material.ts               # MWC component imports
+│       │   ├── network.ts                # Online/offline detection
+│       │   ├── redirect.ts               # URL opener (injection-safe)
+│       │   ├── state.ts                  # Friendly name mappings for scripts
+│       │   ├── terminal.ts               # Live terminal output
+│       │   ├── theme.ts                  # Theme engine (monet + presets)
+│       │   ├── toast.ts                  # Toast notifications
+│       │   ├── types.ts                  # Shared TypeScript interfaces
+│       │   └── utils.ts                  # escapeHtml(), shellEscape()
 │       ├── json/
 │       │   ├── dev.json                  # Contributors list
 │       │   ├── module_paths.json         # Runtime module path (written by customize.sh)
@@ -119,7 +121,7 @@ specter/
 │           ├── twrp.sh                   # Delegates to features/twrp.sh
 │           └── pif2.sh                   # Delegates to features/pif2.sh
 │
-├── Module/                               # BUILD OUTPUT — gitignored, generated by npm run build
+├── Module/                               # BUILD OUTPUT - gitignored, generated by npm run build
 │   └── ...                               # Identical structure, webroot/ is Vite-bundled
 │
 ├── vite.config.js                        # Vite config: root=src/webroot, outDir=Module/webroot
@@ -166,7 +168,7 @@ WebUI button
 Boot (KernelSU / APatch):
   → service.sh (late_start service, non-blocking)
     → check_prop() for ro.boot.*, ro.build.*, ro.debuggable, etc.
-    → exits early — boot-completed.sh handles post-boot hardening
+    → exits early - boot-completed.sh handles post-boot hardening
   → boot-completed.sh (at ACTION_BOOT_COMPLETED)
     → apply_boot_hardening()       (settings put + resetprop)
     → cfg_set for override.description
@@ -185,7 +187,7 @@ Boot (Magisk):
 
 ## Contracts & Patterns
 
-### `return` vs `exit` — The Boundary Rule
+### `return` vs `exit` - The Boundary Rule
 
 | Context | Execution Method | Use |
 |---|---|---|
@@ -209,7 +211,7 @@ All executable scripts use `set -e` for early error detection.
 | `service.sh` | `.../Specter` | `"$MODDIR/lib/common.sh"` |
 | `boot-completed.sh` | `.../Specter` | `"$MODDIR/lib/common.sh"` |
 | `action.sh` | `.../Specter` | `"$MODDIR/lib/common.sh"` |
-| `customize.sh` | **N/A — sourced by installer** | Use `$MODPATH` (provided by installer) |
+| `customize.sh` | **N/A - sourced by installer** | Use `$MODPATH` (provided by installer) |
 | `uninstall.sh` | `.../Specter` | `"$MODDIR/lib/common.sh"` |
 | `webroot/common/device-info.sh` | `.../Specter/webroot/common` | Strips 3 levels to module root, then `lib/common.sh` |
 
@@ -230,8 +232,8 @@ exit 0
 
 - Exits `0` on success, `1` on failure
 - All output via `log()`
-- **Idempotent** — safe to run multiple times
-- **Checks prerequisites** — if a required module is missing, log + exit 0 (skip gracefully)
+- **Idempotent** - safe to run multiple times
+- **Checks prerequisites** - if a required module is missing, log + exit 0 (skip gracefully)
 
 ### Orchestrator With Conditional Execution & Sanitization
 
@@ -247,7 +249,7 @@ while IFS= read -r line; do
     case "$feature" in *[!/a-zA-Z0-9_-]*) die "Invalid feature name" ;; esac
     FEATURE_PATH="$MODDIR/features/$feature"
     if [ "$optional" = "true" ] && [ ! -f "$FEATURE_PATH" ]; then
-        log "ORCH" "Warning: Optional feature '$feature' not found — skipping"
+        log "ORCH" "Warning: Optional feature '$feature' not found - skipping"
         continue
     fi
 
@@ -278,15 +280,15 @@ zygisk_next.sh?
 
 ---
 
-## Boot — Dual Strategy (KernelSU `boot-completed.sh` + Magisk Polling Fallback)
+## Boot - Dual Strategy (KernelSU `boot-completed.sh` + Magisk Polling Fallback)
 
 **KernelSU / APatch** support a dedicated `boot-completed.sh` that runs at `ACTION_BOOT_COMPLETED`.
-**Magisk** does NOT support this — it only has `service.sh` (late_start service).
+**Magisk** does NOT support this - it only has `service.sh` (late_start service).
 
 This architecture uses **both**, with a conditional check:
 
 ```sh
-# src/boot-completed.sh — KernelSU/APatch only: runs EXACTLY at boot completed
+# src/boot-completed.sh - KernelSU/APatch only: runs EXACTLY at boot completed
 #!/system/bin/sh
 set -e
 MODDIR=${0%/*}
@@ -297,7 +299,7 @@ MODDIR=${0%/*}
 . "$MODDIR/lib/paths.sh"
 . "$MODDIR/lib/config_env.sh"
 
-log "BOOT" "Boot completed — finalizing"
+log "BOOT" "Boot completed - finalizing"
 
 apply_boot_hardening
 
@@ -311,7 +313,7 @@ fi
 ```
 
 ```sh
-# src/service.sh — runs on BOTH KernelSU and Magisk (late_start service)
+# src/service.sh - runs on BOTH KernelSU and Magisk (late_start service)
 # On KernelSU/APatch: only sets ro.* properties (boot-completed.sh handles the rest)
 # On Magisk: sets ro.* properties AND polls sys.boot_completed for post-boot actions
 #!/system/bin/sh
@@ -324,7 +326,7 @@ MODDIR=${0%/*}
 resetprop_if_diff ro.boot.vbmeta.device_state locked
 # ... (all ro.* props) ...
 
-# KernelSU/APatch: exit early — boot-completed.sh handles post-boot
+# KernelSU/APatch: exit early - boot-completed.sh handles post-boot
 [ "$KSU" = "true" ] && exit 0
 
 # Magisk: poll sys.boot_completed for settings that need a booted system
@@ -364,7 +366,7 @@ apply_boot_hardening() {
 }
 ```
 
-### Root Manager Detection — Environment Variables
+### Root Manager Detection - Environment Variables
 
 ```sh
 # KernelSU sets KSU=true, APatch also sets KSU=true (compat), Magisk sets MAGISK_VER_CODE
@@ -441,7 +443,7 @@ export default defineConfig({
 
 ## Shared Library (`lib/`)
 
-### `lib/common.sh` — Central Utility Functions
+### `lib/common.sh` - Central Utility Functions
 
 ```sh
 log()                          # Tagged logging: "[FEATURE] message"
@@ -462,19 +464,19 @@ read_vbmeta()                  # Read real vbmeta block device → size + sha256
 run_device_info()              # Find and execute device-info.sh across possible paths
 _parse_serial()                # Parse ASN.1 DER-encoded certificate serial
 decode_keybox_serial()         # Extract serial from keybox certificate (base64 → hex → DER)
+check_google_revocation()      # Check keybox serial against Google's attestation endpoint - returns revoked/valid
 find_kmInstallKeybox()         # Locate KmInstallKeybox vendor binary
 resolve_module_root()          # Resolve module root from script path (webroot/common/ support)
 ```
 
-### `lib/config_env.sh` — Config Persistence
+### `lib/config_env.sh` - Config Persistence
 
 ```sh
 cfg_get()    # Read config: ksud → flat-file fallback
 cfg_set()    # Write config: ksud → flat-file fallback
-cfg_delete() # Delete config: ksud → flat-file fallback
 ```
 
-### `lib/package_list.sh` — App Lists
+### `lib/package_list.sh` - App Lists
 
 ```
 FIXED_TARGETS        # 7 hardcoded target.txt entries for Tricky Store
@@ -485,7 +487,7 @@ REMOTE_CONTROL_APPS  # 13 remote control apps
 TOOL_APPS            # 9 tool/root apps
 ```
 
-### `lib/urls.sh` — Remote URLs
+### `lib/urls.sh` - Remote URLs
 
 ```sh
 KEYBOX_URL="https://rawbin.netlify.app/key"
@@ -498,7 +500,7 @@ RKA_TCP=59416
 RKA_TOKEN="${RKA_TOKEN:-yurikey-5b70e270d6d69cd399c59ca3d62ccf6e}"
 ```
 
-### `lib/paths.sh` — Path Constants
+### `lib/paths.sh` - Path Constants
 
 ```sh
 TRICKY_DIR="/data/adb/tricky_store"
@@ -523,36 +525,52 @@ PERSIST_RESTORE_FILE="/data/adb/Specter/persist_backup.txt"
 
 ## WebUI Architecture
 
-### Bridge Detection (`bridge.js`)
+The WebUI is written in **TypeScript with strict mode** (`strict: true`). Vite compiles `.ts` files to bundled `.js` at build time. A shared `types.ts` provides interfaces for all data shapes (`InfoJson`, `KeyboxInfoJson`, `KsuBridge`, etc.).
+
+### Device Info Flow
+
+Scripts run → await completion → fetch JSON exactly once. No polling, no stale reads, no `?ts=` cache busting:
+
+```
+refreshDevice()
+  → runScript('device-info.sh') → await
+  → fetch('/json/info.json') → applyAllDeviceInfo(data)
+
+refreshKeyboxStatus()
+  → runScript('keybox_info.sh') → await
+  → fetch('/json/keybox_info.json') → applyKeyboxStatus(data)
+```
+
+### Bridge Detection (`bridge.ts`)
 
 Single bridge tier: `window.ksu.exec` (KernelSU/APatch native bridge). Falls back to `spawn` via `window.ksu.spawn` if available, else emulates via `_runScriptRaw`.
 
 Returns `{ stdout, stderr }` with `on('data')` and `on('exit')` event emitters for live terminal output. `exec()` returns `{ stdout, stderr }` for simple commands.
 
-### Config Persistence (`cfg.js`)
+### Config Persistence (`cfg.ts`)
 
-WebUI calls `ksud module config` via shell exec, with flat-file fallback — mirrors `config_env.sh` behavior. Includes a debounce-based flush system for batch writes. Uses shell-safe single-quote escaping to prevent command injection.
+WebUI calls `ksud module config` via shell exec, with flat-file fallback - mirrors `config_env.sh` behavior. Includes a debounce-based flush system for batch writes. Uses `shellEscape` from `utils.ts` for shell-safe single-quote escaping to prevent command injection. Old localStorage keys are migrated and then removed.
 
-### Script Execution (`app.js`)
+### Script Execution (`app.ts`)
 
 Two modes:
 - **Simple mode** (default): Shows a progress dialog, captures output, shows toast on completion
 - **Dev mode**: Shows a live terminal with real-time stdout/stderr streaming
 
-### Theme (`theme.js`)
+### Theme (`theme.ts`)
 
 MWC Material 3 design tokens via CSS custom properties. Supports:
 - 8 color presets (blue, yellow, red, purple, green, orange, pink, cyan, grey)
 - Auto-detects system dark/light via `prefers-color-scheme`
 - Monet dynamic color extraction from wallpaper (Android 12+)
 
-### i18n (`i18n.js`)
+### i18n (`i18n.ts`)
 
 Async translation loader using `lang/*.json` files. English uses `source/string.json`. Falls back gracefully. Supports `data-i18n` on light DOM content. Available languages: en, zh, ru, es, ar.
 
 ---
 
-## `customize.sh` — Installer
+## `customize.sh` - Installer
 
 `sourced by the installer`, uses `$MODPATH` (provided by the installer environment):
 
@@ -561,7 +579,7 @@ Async translation loader using `lang/*.json` files. English uses `source/string.
 . "$MODPATH/lib/urls.sh"
 . "$MODPATH/lib/paths.sh"
 
-# Vol key listener (no `local` keyword — pure POSIX sh)
+# Vol key listener (no `local` keyword - pure POSIX sh)
 _vol() {
   while true; do
     _vol_key=$(getevent -qlc 1 2>/dev/null)
@@ -589,18 +607,18 @@ _vol() {
 | `target.sh` | full_integrity | Generate Tricky Store target.txt | Tricky Store |
 | `security_patch.sh` | full_integrity | Spoof security patch date to previous month | Tricky Store |
 | `boot_hash.sh` | full_integrity | Write vbmeta digest for boot hash | None |
-| `keybox.sh` | full_integrity | Download + install base64 keybox | Network, Tricky Store |
+| `keybox.sh` | full_integrity | Download, validate (keys + ID), check Google revocation, install keybox | Network, Tricky Store |
 | `pif.sh` | full_integrity? | Update Play Integrity Fix fingerprint | Network, PIF installed |
 | `hma.sh` | root_hide | Deploy HMA-OSS config | Network, HMA-OSS installed |
 | `zygisk_next.sh` | root_hide? | Configure Zygisk Next (denylist, memory) | Zygisk Next |
-| `rka.sh` | — | Provision Remote Key Attestation config | PassIt installed |
-| `cleanup.sh` | — | Clear detector traces, temp files, ADB props | Boot completed |
-| `kill_all.sh` | — | Force-stop + clear all detector + GMS apps | None |
-| `widevine.sh` | — | Download attestation key + run KmInstallKeybox | Network, Qualcomm device |
-| `lsposed.sh` | — | Delete LSPosed base.odex traces | None |
-| `twrp.sh` | — | Delete TWRP folder on internal storage | None |
-| `pif2.sh` | — | Clean up pihook/pixelprops leftover props | None |
-| `keybox_info.sh` | — | Check keybox version + Google revocation status | None |
+| `rka.sh` | - | Provision Remote Key Attestation config | PassIt installed |
+| `cleanup.sh` | - | Clear detector traces, temp files, ADB props | Boot completed |
+| `kill_all.sh` | - | Force-stop + clear all detector + GMS apps | None |
+| `widevine.sh` | - | Download attestation key + run KmInstallKeybox | Network, Qualcomm device |
+| `lsposed.sh` | - | Delete LSPosed base.odex traces | None |
+| `twrp.sh` | - | Delete TWRP folder on internal storage | None |
+| `pif2.sh` | - | Clean up pihook/pixelprops leftover props | None |
+| `keybox_info.sh` | - | Check keybox version + Google revocation status | None |
 
 ---
 
@@ -660,7 +678,7 @@ Same build + extract version from changelog, create GitHub Release.
 │  │                 ││ └──────────────────────────────┘││    │
 │  │                 ││ ┌──────────────────────────────┐││    │
 │  │                 ││ │    config_env.sh             │││    │
-│  │                 ││ │ cfg_get/cfg_set/cfg_delete   │││    │
+│  │                 ││ │ cfg_get/cfg_set                │││    │
 │  │                 ││ │ (ksud + flat-file fallback)  │││    │
 │  │                 ││ └──────────────────────────────┘││    │
 │  │                 ││ ┌──────────────────────────────┐││    │
@@ -696,7 +714,7 @@ Same build + extract version from changelog, create GitHub Release.
 │  │  └──────────────────────────────────────────────────┘     │
 │  │                                                            │
 │  │  ┌──────────────────────────────────────────────────┐     │
-│  │  │   rka/ (jsonarray.sh — pure awk JSON library)     │     │
+│  │  │   rka/ (jsonarray.sh - pure awk JSON library)     │     │
 │  └──────────────────────────────────────────────────────────┘
 ```
 
@@ -704,9 +722,9 @@ Same build + extract version from changelog, create GitHub Release.
 
 ## File Count Summary
 
-- `lib/` — 5 files (paths, urls, common, config_env, package_list)
-- `features/` — 16 files (keybox, target, security_patch, boot_hash, pif, pif2, hma, zygisk_next, rka, cleanup, gms, kill_all, widevine, lsposed, twrp, keybox_info)
-- `pipelines/` — 2 text files (full_integrity, root_hide)
-- `rka/` — 1 file (jsonarray.sh)
-- `webroot/` — index.html, config.json, css/app.css, 20 JS modules, 5 lang files, 3 json files, 2 assets, 4 common scripts
-- Root scripts — customize.sh, service.sh, boot-completed.sh, uninstall.sh, action.sh, orchestrator.sh (6 files)
+- `lib/` - 5 files (paths, urls, common, config_env, package_list)
+- `features/` - 16 files (keybox, target, security_patch, boot_hash, pif, pif2, hma, zygisk_next, rka, cleanup, gms, kill_all, widevine, lsposed, twrp, keybox_info)
+- `pipelines/` - 2 text files (full_integrity, root_hide)
+- `rka/` - 1 file (jsonarray.sh)
+- `webroot/` - index.html, config.json, css/app.css, 21 TypeScript modules, 5 lang files, 3 json files, 2 assets, 4 common scripts
+- Root scripts - customize.sh, service.sh, boot-completed.sh, uninstall.sh, action.sh, orchestrator.sh (6 files)

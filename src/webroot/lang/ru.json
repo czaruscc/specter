@@ -72,7 +72,7 @@
   "theme_preset_green": "Green",
   "toast_error": "Ошибка",
   "toast_success": "Готово ✓",
-  "toast_timeout": "Время вышло — проверьте установку модуля",
+  "toast_timeout": "Время вышло - проверьте установку модуля",
   "update_desc": "",
   "update_github": "Посмотреть на GitHub",
   "update_note": "Присоединяйтесь к нашему Telegram каналу или следите за обновлениями, предложениями по улучшению и техническими обсуждениями на GitHub.",

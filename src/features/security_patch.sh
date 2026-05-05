@@ -5,9 +5,9 @@ MODDIR=${0%/*}
 
 log "SECURITY_PATCH" "Start"
 
-current_year=$(date +%Y) || die "Failed to get year"
-current_month=$(date +%m) || die "Failed to get month"
-current_day=$(date +%d) || die "Failed to get day"
+current_year=$(date +%Y 2>/dev/null) || current_year=$(getprop ro.build.version.release 2>/dev/null | cut -d. -f1) || current_year="2026"
+current_month=$(date +%m 2>/dev/null) || current_month="01"
+current_day=$(date +%d 2>/dev/null) || current_day="05"
 
 if [ "$current_day" -lt 5 ]; then
   if [ "$current_month" -eq 1 ]; then
@@ -32,6 +32,7 @@ system=prop
 boot=$patch_date
 vendor=$patch_date
 EOF
+log "SECURITY_PATCH" "Patch date written to $SECURITY_PATCH_FILE"
 
 log "SECURITY_PATCH" "Finish"
 exit 0

@@ -24,4 +24,4 @@ import '@material/web/ripple/ripple.js';
 import '@material/web/labs/card/filled-card.js';
 
 import {styles as typescaleStyles} from '@material/web/typography/md-typescale-styles.js';
-document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
+if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);

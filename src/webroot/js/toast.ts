@@ -1,8 +1,16 @@
 import { escapeHtml } from './utils.js';
-
 import { getTranslation } from './i18n.js';
 
-export function showToast(message, options = {}) {
+interface ToastOptions {
+  action?: string;
+  icon?: string;
+  type?: string;
+  autoCloseDelay?: number;
+  onActionClick?: () => void;
+  className?: string;
+}
+
+export function showToast(message: string, options: ToastOptions = {}) {
   const { action, icon, type, autoCloseDelay = 3000, onActionClick, className } = options;
 
   const toast = document.createElement('div');
@@ -32,7 +40,7 @@ export function showToast(message, options = {}) {
 
   if (autoCloseDelay > 0) {
     const timer = setTimeout(() => close(toast), autoCloseDelay);
-    toast._autoTimer = timer;
+    (toast as any)._autoTimer = timer;
   }
 
   initSwipe(toast);
@@ -40,23 +48,23 @@ export function showToast(message, options = {}) {
   return toast;
 }
 
-function initSwipe(toast) {
+function initSwipe(toast: HTMLElement) {
   let startX = 0;
   let currentX = 0;
   let dragging = false;
 
-  const onStart = (e) => {
+  const onStart = (e: PointerEvent) => {
     startX = e.clientX;
     currentX = 0;
     dragging = true;
     toast.style.transition = 'none';
-    if (toast._autoTimer) {
-      clearTimeout(toast._autoTimer);
-      toast._autoTimer = null;
+    if ((toast as any)._autoTimer) {
+      clearTimeout((toast as any)._autoTimer);
+      (toast as any)._autoTimer = null;
     }
   };
 
-  const onMove = (e) => {
+  const onMove = (e: PointerEvent) => {
     if (!dragging) return;
     currentX = e.clientX - startX;
     const isRtl = document.documentElement.dir === 'rtl';
@@ -93,7 +101,7 @@ function initSwipe(toast) {
   toast.addEventListener('pointercancel', onEnd);
 }
 
-function close(toast, { dismiss = false } = {}) {
+function close(toast: HTMLElement, { dismiss = false }: { dismiss?: boolean } = {}) {
   toast.classList.remove('md-toast--open');
   if (dismiss) toast.classList.add('md-toast--dismiss');
   toast.addEventListener('transitionend', () => {
@@ -104,6 +112,6 @@ function close(toast, { dismiss = false } = {}) {
   }, 300);
 }
 
-export function closeToast(toast) {
+export function closeToast(toast: HTMLElement) {
   close(toast);
 }

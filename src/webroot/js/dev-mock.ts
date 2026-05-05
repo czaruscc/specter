@@ -1,13 +1,13 @@
 if (typeof window.ksu === 'undefined') {
   const ksuMock = {
-    exec(cmd, opts, cbName) {
+    exec(cmd: string, opts: string, cbName: string) {
       setTimeout(() => {
-        const cb = window[cbName];
+        const cb = window[cbName] as ((...args: any[]) => void) | undefined;
         if (typeof cb === 'function') cb(0, '', '');
       }, 50);
     },
-    spawn(cmd, argsJson, opts, spName) {
-      const child = window[spName];
+    spawn(cmd: string, argsJson: string, opts: string, spName: string) {
+      const child = window[spName] as any;
       if (child) {
         setTimeout(() => {
           child.stdout?.emit?.('data', '');
@@ -23,11 +23,11 @@ if (typeof window.ksu === 'undefined') {
   });
 
   const origFetch = window.fetch.bind(window);
-  window.fetch = function (url, ...rest) {
-    const u = typeof url === 'string' ? url : url.url;
+  window.fetch = function (url: RequestInfo | URL, ...rest: any[]) {
+    const u = typeof url === 'string' ? url : (url as Request).url;
 
     if (u.startsWith('/json/module_paths.json')) {
-      return origFetch(u, ...rest).then(r => {
+      return origFetch(u, ...rest).then((r: Response) => {
         const ct = r.headers.get('content-type') || '';
         if (!r.ok || !ct.includes('json')) throw new Error('not found');
         return r;

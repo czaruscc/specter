@@ -1,4 +1,4 @@
-let terminalEl = null;
+let terminalEl: HTMLElement | null = null;
 
 export function initTerminal() {
   terminalEl = document.querySelector('.output-terminal-content');
@@ -10,7 +10,7 @@ export function initTerminal() {
   }
 }
 
-export function appendToOutput(content, error = false) {
+export function appendToOutput(content: string, error = false) {
   if (!terminalEl) return;
   if (content.trim() === '') {
     terminalEl.appendChild(document.createElement('br'));

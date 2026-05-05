@@ -1,4 +1,4 @@
-let clockInterval = null;
+let clockInterval: ReturnType<typeof setInterval> | null = null;
 
 export async function initClock() {
   updateClock();

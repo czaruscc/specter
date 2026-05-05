@@ -15,10 +15,3 @@ cfg_set() {
     unset _cs_key _cs_val
 }
 
-cfg_delete() {
-    _cd_key="$1"
-    ksud module config delete "$_cd_key" 2>/dev/null || {
-        rm -f "$CONFIG_DIR/$_cd_key.val" 2>/dev/null
-    }
-    unset _cd_key
-}

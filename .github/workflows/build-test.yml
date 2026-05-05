@@ -1,17 +1,44 @@
 name: Build Test Module
-on: workflow_dispatch
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with: { node-version: 22 }
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
       - name: Lint shell scripts
-        run: sudo apt install -y shellcheck && find src/ -name '*.sh' -exec shellcheck {} +
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: src
+          severity: warning
+
       - name: Build
-        run: npm ci && npm run build
+        run: npm run build
+
       - name: Verify module structure
         run: |
           test -f Module/module.prop
@@ -20,9 +47,11 @@ jobs:
           test -f Module/lib/common.sh
           test -f Module/lib/config_env.sh
           test -f Module/webroot/json/module_paths.json
+
       - name: Check no hardcoded paths
         run: |
           ! grep -rn "/data/adb/modules/Specter" Module/lib/ Module/features/ --include="*.sh"
+
       - name: Check no su -c in features
         run: |
           ! grep -rn "su -c" Module/features/ --include="*.sh"

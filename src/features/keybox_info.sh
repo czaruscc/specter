@@ -24,51 +24,59 @@ if [ -f "$KEYBOX_FILE" ]; then
     _source="Private"
     _text="Keybox"
     _up_to_date=true
-    _revoked=false
     log "KEYBOX_INFO" "Private keybox flagged by user"
+    if _serial=$(decode_keybox_serial "$KEYBOX_FILE"); then
+      if check_google_revocation "$_serial"; then
+        _revoked=true
+        log "KEYBOX_INFO" "Revoked by Google"
+      fi
+    fi
   elif _serial=$(decode_keybox_serial "$KEYBOX_FILE"); then
     log "KEYBOX_INFO" "Serial: $_serial"
 
+    # Check A: Google revocation (independent of catalog)
+    if check_google_revocation "$_serial"; then
+      _revoked=true
+      log "KEYBOX_INFO" "Revoked by Google"
+    fi
+
+    # Check B: Catalog identity (source/version/text/up_to_date)
     if check_network; then
       _history_json=$(download "$CATALOG_URL" 2>/dev/null)
       log "KEYBOX_INFO" "History response length: ${#_history_json}"
 
       if [ -n "$_history_json" ]; then
-        # Resolve provider: if auto, use the working entry's source
         _provider=$(cat "$CONFIG_DIR/kb_provider.val" 2>/dev/null || echo "auto")
         if [ "$_provider" = "auto" ]; then
           _provider=$(echo "$_history_json" | grep -o '"working":{[^}]*"source":"[^"]*"' | sed 's/.*"source":"\([^"]*\)".*/\1/')
         fi
-        # Try to match by source + serial first (handles duplicate serials across providers)
+
         if [ -n "$_provider" ]; then
           _entry=$(echo "$_history_json" | grep -o '{[^}]*"source":"'"$_provider"'"[^}]*"serial":"'"$_serial"'"[^}]*}')
         fi
-        # Fall back to any serial match
         if [ -z "$_entry" ]; then
           _entry=$(echo "$_history_json" | grep -o '{[^}]*"serial":"'"$_serial"'"[^}]*}')
         fi
+
         if [ -n "$_entry" ]; then
           _source=$(echo "$_entry" | grep -o '"source":"[^"]*"' | head -1 | sed 's/"source":"//;s/"//')
           _source_version=$(echo "$_entry" | grep -o '"version":"[^"]*"' | head -1 | sed 's/"version":"//;s/"//')
           _text=$(echo "$_entry" | grep -o '"text":"[^"]*"' | head -1 | sed 's/"text":"//;s/"//')
-          _revoked=$(echo "$_entry" | grep -o '"revoked":\(true\|false\)' | head -1 | sed 's/"revoked"://')
           [ -z "$_source" ] && _source="unknown"
           [ -z "$_source_version" ] && _source_version="?"
           [ -z "$_text" ] && _text=""
-          [ -z "$_revoked" ] && _revoked=false
-          log "KEYBOX_INFO" "Found: source=$_source version=$_source_version text=$_text revoked=$_revoked"
+          log "KEYBOX_INFO" "Found: source=$_source version=$_source_version text=$_text"
 
-          # Check if up-to-date by comparing with latest for this source
           _latest_for_source=$(echo "$_history_json" | grep -o '"'"$_source"'":"[^"]*"' | sed 's/.*":"//;s/"//')
           if [ -n "$_source_version" ] && [ "$_source_version" = "$_latest_for_source" ]; then
             _up_to_date=true
           fi
         else
-          log "KEYBOX_INFO" "Not found in history"
+          log "KEYBOX_INFO" "Not found in catalog"
         fi
       fi
     else
-      log "KEYBOX_INFO" "Network check failed"
+      log "KEYBOX_INFO" "Network check failed, skipping catalog"
     fi
   fi
 fi
@@ -84,5 +92,5 @@ cat <<EOF > "$INFO_PATH"
 }
 EOF
 
-unset _installed _source _source_version _text _up_to_date _revoked _b64 _hex _serial _serial_hex _history_json _entry _ctx_len_hex _ctx_len _l_hex _l_dec _n _sl _latest_for_source
+unset _installed _source _source_version _text _up_to_date _revoked _serial _history_json _entry _provider _latest_for_source
 exit 0

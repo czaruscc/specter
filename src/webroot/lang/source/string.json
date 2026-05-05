@@ -74,7 +74,7 @@
   "simple_toast_error": "Failed",
   "simple_toast_view_details": "View Details",
   "history_title": "Recent Activity",
-  "history_empty": "No activity yet — run an action to get started",
+  "history_empty": "No activity yet - run an action to get started",
   "error_dialog_title": "Error Details",
 
   "script_history_title": "Script History",
@@ -84,7 +84,7 @@
 
   "toast_success": "Done",
   "toast_error": "Failed",
-  "toast_timeout": "Timed out — check your module installation",
+  "toast_timeout": "Timed out - check your module installation",
 
   "role_founder_dev": "Founder & Developer",
   "role_contributor_dev": "Module Developer",
@@ -108,6 +108,9 @@
   "custom_kb_revoked": "Revoked",
   "custom_kb_active": "Active",
   "custom_kb_apply_confirm": "Apply",
+  "custom_kb_installed": "Custom keybox installed",
+  "custom_kb_install_failed": "Install failed",
+  "custom_kb_private_ask": "Is this a private keybox?",
 
   "advance_toggle_recovery": "Auto-Hide Recovery Folders",
   "advance_toggle_recovery_desc": "Hides TWRP, OrangeFox, FOX, PBRP, PitchBlack, Recovery at boot",

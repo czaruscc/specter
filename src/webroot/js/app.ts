@@ -1,6 +1,6 @@
 import './material.js';
 import { initBridge, spawnScript, exec, getModuleDir as getBridgeModuleDir } from './bridge.js';
-import { setModuleDir, migrateLocalStorage, cfgGet, cfgSet } from './cfg.js';
+import { setModuleDir, migrateLocalStorage, cfgGet, cfgSet, cfgFlush } from './cfg.js';
 import { initDevice, refreshDevice, refreshKeyboxStatus, loadBlacklistContent, saveBlacklistContent, loadSmartmergeContent, saveSmartmergeContent } from './device.js';
 import { initClock } from './clock.js';
 import { initNetwork } from './network.js';
@@ -22,7 +22,8 @@ let devMode = false;
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await initBridge();
-    setModuleDir(getBridgeModuleDir());
+    const modPath = getBridgeModuleDir();
+    if (modPath) setModuleDir(modPath);
     await migrateLocalStorage();
   } catch (e) {
     console.warn('Bridge init failed, running without module path:', e);
@@ -48,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const savedDevMode = await cfgGet('dev_mode', 'false') || 'false';
   devMode = savedDevMode === 'true';
-  const sw = document.getElementById('dev-mode-switch');
+  const sw = document.getElementById('dev-mode-switch') as any;
   if (sw) sw.selected = devMode;
   wireDevMode();
   initTerminal();
@@ -64,21 +65,21 @@ function wireTopBarScroll() {
 
 function wireNavigation() {
   const navTabs = document.querySelectorAll('.nav-tab');
-  const indicator = document.getElementById('nav-indicator');
+  const indicator = document.getElementById('nav-indicator')!;
   const pages = [
-    document.getElementById('home-page'),
-    document.getElementById('actions-page'),
-    document.getElementById('advanced-page'),
-    document.getElementById('settings-page'),
+    document.getElementById('home-page')!,
+    document.getElementById('actions-page')!,
+    document.getElementById('advanced-page')!,
+    document.getElementById('settings-page')!,
   ];
 
-  function reposition(tab) {
+  function reposition(tab: HTMLElement) {
     indicator.style.left = tab.offsetLeft + 'px';
     indicator.style.width = tab.offsetWidth + 'px';
   }
 
   requestAnimationFrame(() => {
-    const active = document.querySelector('.nav-tab--active');
+    const active = document.querySelector('.nav-tab--active') as HTMLElement | null;
     if (active) reposition(active);
   });
 
@@ -94,31 +95,33 @@ function wireNavigation() {
       tab.classList.add('nav-tab--active');
       tab.setAttribute('aria-current', 'page');
       tab.querySelector('.nav-icon')?.classList.add('nav-icon--filled');
-      reposition(tab);
-      const pageId = tab.dataset.page;
+      reposition(tab as HTMLElement);
+      const pageId = (tab as HTMLElement).dataset.page;
       pages.forEach((el) => { el.hidden = el.id !== pageId; });
       window.scrollTo({ top: 0, behavior: 'instant' });
     });
   });
 
   window.addEventListener('resize', () => {
-    const active = document.querySelector('.nav-tab--active');
+    const active = document.querySelector('.nav-tab--active') as HTMLElement | null;
     if (active) reposition(active);
   });
 }
 
 function buildFriendlyNames() {
-  const names = {};
+  const names: Record<string, string> = {};
   document.querySelectorAll('.list-item[data-script]').forEach(item => {
-    const scriptName = item.dataset.script;
-    const headline = item.querySelector('.toggle-text[data-i18n]');
-    if (headline) names[scriptName] = headline.dataset.i18n;
+    const el = item as HTMLElement;
+    const scriptName = el.dataset.script;
+    if (!scriptName) return;
+    const headline = item.querySelector('.toggle-text[data-i18n]') as HTMLElement | null;
+    if (headline) names[scriptName] = headline.dataset.i18n || '';
   });
   setFriendlyNames(names);
 }
 
 function wireDevMode() {
-  const sw = document.getElementById('dev-mode-switch');
+  const sw = document.getElementById('dev-mode-switch') as any;
   if (!sw) return;
   sw.addEventListener('change', () => {
     devMode = sw.selected;
@@ -128,30 +131,31 @@ function wireDevMode() {
 
 function wireActions() {
   document.querySelectorAll('.list-item[data-script]').forEach(item => {
-    item.addEventListener('click', async (e) => {
-      if (item.disabled) return;
-      const scriptName = item.dataset.script;
-      const spinner = item.querySelector('.action-spinner');
-      item.disabled = true;
+    const el = item as HTMLElement;
+    item.addEventListener('click', async (_e) => {
+      if ((el as any).disabled) return;
+      const scriptName = el.dataset.script || '';
+      const spinner = item.querySelector('.action-spinner') as HTMLElement | null;
+      (el as any).disabled = true;
       spinner?.classList.remove('hidden');
       try {
         if (devMode) {
-          await runDevAction(scriptName, item, spinner);
+          await runDevAction(scriptName, el, spinner);
         } else {
-          await runSimpleAction(scriptName, item, spinner);
+          await runSimpleAction(scriptName, el, spinner);
         }
-      } catch (_e) {
-        console.warn('Action error:', _e);
+      } catch (_err) {
+        console.warn('Action error:', _err);
       } finally {
-        item.disabled = false;
+        (el as any).disabled = false;
         spinner?.classList.add('hidden');
       }
     });
   });
 }
 
-async function runDevAction(scriptName, item, spinner) {
-  const lines = [];
+async function runDevAction(scriptName: string, _item: HTMLElement, _spinner: HTMLElement | null) {
+  const lines: string[] = [];
   appendToOutput(`> ${scriptName}`);
   const dialog = document.createElement('md-dialog');
   dialog.innerHTML = `
@@ -162,58 +166,58 @@ async function runDevAction(scriptName, item, spinner) {
     </div>
   `;
   document.body.appendChild(dialog);
-  dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
+  dialog.querySelector('.dialog-close')!.addEventListener('click', () => (dialog as any).close());
   dialog.addEventListener('close', () => document.body.removeChild(dialog));
-  dialog.show();
+  (dialog as any).show();
   const pre = dialog.querySelector('#live-output');
   const child = spawnScript(scriptName, 'feature');
-  child.stdout.on('data', line => {
+  child.stdout.on('data', (line: string) => {
     appendToOutput(line); lines.push(line);
     if (pre) pre.textContent += line + '\n';
     if (pre?.parentElement) pre.parentElement.scrollTop = pre.parentElement.scrollHeight;
   });
-  child.stderr.on('data', line => {
+  child.stderr.on('data', (line: string) => {
     appendToOutput(line, true); lines.push('[!] ' + line);
     if (pre) pre.textContent += '[!] ' + line + '\n';
     if (pre?.parentElement) pre.parentElement.scrollTop = pre.parentElement.scrollHeight;
   });
-  child.on('exit', (code) => {
+  child.on('exit', (code: number) => {
     appendToOutput(`> ${scriptName} exited (code: ${code})`);
     addEntry(scriptName, lines.join('\n'));
   });
-  child.on('error', err => {
+  child.on('error', (err: Error) => {
     const msg = err.message || 'Unknown error';
     appendToOutput(`> Error: ${msg}`, true);
     addEntry(scriptName, msg);
   });
 }
 
-async function runSimpleAction(scriptName, item, spinner) {
+async function runSimpleAction(scriptName: string, _item: HTMLElement, _spinner: HTMLElement | null) {
   const i18nKey = getFriendlyName(scriptName);
   const friendlyName = getTranslation(i18nKey) || i18nKey;
-  const lines = [];
+  const lines: string[] = [];
   appendToOutput(`> ${friendlyName}`);
-  const dialog = document.getElementById('progress-dialog');
+  const dialog = document.getElementById('progress-dialog') as any;
   const label = document.getElementById('progress-label');
   const text = document.getElementById('progress-text');
   if (label) label.textContent = friendlyName;
   if (text) text.textContent = getTranslation('simple_dialog_wait') || 'This may take a moment';
-  dialog.show();
+  if (dialog) dialog.show();
   const child = spawnScript(scriptName, 'feature');
-  child.stdout.on('data', line => {
+  child.stdout.on('data', (line: string) => {
     appendToOutput(line); lines.push(line);
   });
-  child.stderr.on('data', line => {
+  child.stderr.on('data', (line: string) => {
     appendToOutput(line, true); lines.push('[!] ' + line);
   });
-  child.on('exit', (code) => {
+  child.on('exit', (code: number) => {
     appendToOutput(`> ${friendlyName} exited (code: ${code})`);
     addEntry(scriptName, lines.join('\n'));
-    dialog.close();
+    if (dialog) dialog.close();
     if (code !== 0) {
       const errorMsg = lines.find(l => l.includes('Error')) || lines[lines.length - 1] || friendlyName;
       showToast(`${getTranslation('simple_toast_error') || 'Failed'}: ${errorMsg}`, {
-        icon: 'error', type: 'error',
+        icon: 'error', type: 'error' as any,
         action: getTranslation('simple_toast_view_details') || 'View Details',
         autoCloseDelay: 8000,
         onActionClick: () => {
@@ -222,17 +226,17 @@ async function runSimpleAction(scriptName, item, spinner) {
       });
     } else {
       showToast(getTranslation('toast_success') || 'Done', {
-        icon: 'check_circle', type: 'success', autoCloseDelay: 3000,
+        icon: 'check_circle', type: 'success' as any, autoCloseDelay: 3000,
       });
     }
   });
-  child.on('error', err => {
+  child.on('error', (err: Error) => {
     const msg = err.message || 'Unknown error';
     appendToOutput(`> Error: ${msg}`, true);
     addEntry(scriptName, msg);
-    dialog.close();
+    if (dialog) dialog.close();
     showToast(`${getTranslation('simple_toast_error') || 'Failed'}: ${friendlyName}`, {
-      icon: 'error', type: 'error',
+      icon: 'error', type: 'error' as any,
       action: getTranslation('simple_toast_view_details') || 'View Details',
       autoCloseDelay: 8000,
       onActionClick: () => {
@@ -243,7 +247,7 @@ async function runSimpleAction(scriptName, item, spinner) {
 }
 
 function wireRefreshButton() {
-  const btn = document.getElementById('refresh-btn');
+  const btn = document.getElementById('refresh-btn') as HTMLButtonElement | null;
   if (!btn) return;
   btn.addEventListener('click', async () => {
     btn.disabled = true;
@@ -257,12 +261,12 @@ function wireKeyboxCard() {
   const card = document.getElementById('keybox-card');
   if (!card) return;
   card.addEventListener('click', () => {
-    const sw = document.getElementById('dev-mode-switch');
+    const sw = document.getElementById('dev-mode-switch') as any;
     openRecentActivity(sw ? sw.selected : false);
   });
 }
 
-function renderProviderOptions(select, sources) {
+function renderProviderOptions(select: any, sources: string[]) {
   while (select.children.length > 1) select.removeChild(select.lastChild);
   for (const s of sources) {
     const opt = document.createElement('md-select-option');
@@ -273,14 +277,14 @@ function renderProviderOptions(select, sources) {
 }
 
 async function populateProviders() {
-  const select = document.getElementById('kb-provider');
+  const select = document.getElementById('kb-provider') as any;
   if (!select) return;
 
   const saved = await cfgGet('kb_provider', 'auto') || 'auto';
 
   if (!select._listenerAttached) {
-    select.addEventListener('click', (e) => e.stopPropagation());
-    select.addEventListener('change', (e) => { e.stopPropagation(); cfgSet('kb_provider', select.value); });
+    select.addEventListener('click', (e: Event) => e.stopPropagation());
+    select.addEventListener('change', (_e: Event) => { _e.stopPropagation(); select.value; cfgSet('kb_provider', select.value); });
     select._listenerAttached = true;
   }
 
@@ -288,7 +292,7 @@ async function populateProviders() {
     const res = await fetch(API_URLS.KEY_CATALOG);
     if (res.ok) {
       const data = await res.json();
-      const entries = Array.isArray(data.entries) ? data.entries : [];
+      const entries: Array<{ source: string }> = Array.isArray(data.entries) ? data.entries : [];
       const sources = [...new Set(entries.map(e => e.source))].sort();
       const currentValue = select.value;
       renderProviderOptions(select, sources);
@@ -306,12 +310,12 @@ function wireCustomKeybox() {
 }
 
 function wireKeyboxInstallButton() {
-  const btn = document.getElementById('kb-install-btn');
+  const btn = document.getElementById('kb-install-btn') as any;
   const card = document.querySelector('.keybox-install-card');
-  const spinner = card?.querySelector('.kic-spinner');
+  const spinner = card?.querySelector('.kic-spinner') as HTMLElement | null;
   if (!btn) return;
 
-  btn.addEventListener('click', async (e) => {
+  btn.addEventListener('click', async (e: Event) => {
     e.stopPropagation();
     if (btn.disabled) return;
 
@@ -319,6 +323,9 @@ function wireKeyboxInstallButton() {
     spinner?.classList.remove('hidden');
 
     try {
+      cfgSet('kb_custom_type', '');
+      cfgSet('kb_custom_value', '');
+      await cfgFlush();
       if (devMode) {
         await runDevAction('keybox.sh', btn, spinner);
       } else {
@@ -334,7 +341,7 @@ function wireKeyboxInstallButton() {
 }
 
 async function openCustomKeyboxDialog() {
-  const t = (key, fallback) => getTranslation(key) || fallback;
+  const t = (key: string, fallback: string): string => getTranslation(key) || fallback;
 
   const dialog = document.createElement('md-dialog');
 
@@ -350,7 +357,6 @@ async function openCustomKeyboxDialog() {
           </p>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <md-assist-chip id="kb-file-chip" label="${t('custom_kb_no_file', 'No file selected')}" style="height:36px;font-size:0.75rem"></md-assist-chip>
-            <input type="file" accept=".xml,.xml.bak" id="kb-hidden-file" style="display:none">
             <md-filled-tonal-button id="kb-file-btn" style="height:36px;font-size:0.75rem">${t('custom_kb_browse', 'Browse Files')}</md-filled-tonal-button>
           </div>
         </div>
@@ -364,7 +370,7 @@ async function openCustomKeyboxDialog() {
             Paste a download URL or enter a device path
           </p>
           <md-outlined-text-field id="kb-url-input" style="width:100%;--md-outlined-text-field-container-shape:14px;--md-sys-shape-corner-extra-small:14px;border-radius:14px;height:44px" placeholder="https://example.com/keybox.xml or /sdcard/keybox.xml">
-            <md-icon-button slot="trailing-icon" id="kb-paste-btn">
+            <md-icon-button slot="trailing-icon" id="kb-paste-btn" aria-label="Paste from clipboard">
               <md-icon>content_paste</md-icon>
             </md-icon-button>
           </md-outlined-text-field>
@@ -381,20 +387,20 @@ async function openCustomKeyboxDialog() {
   document.body.appendChild(dialog);
 
   const fileBtn = dialog.querySelector('#kb-file-btn');
-  const urlInput = dialog.querySelector('#kb-url-input');
+  const urlInput = dialog.querySelector('#kb-url-input') as any;
   const pasteBtn = dialog.querySelector('#kb-paste-btn');
   const clearBtn = dialog.querySelector('#kb-clear');
   const applyBtn = dialog.querySelector('#kb-apply');
 
-  fileBtn.addEventListener('click', () => {
-    openFileBrowser((filePath) => {
+  fileBtn!.addEventListener('click', () => {
+    openFileBrowser((filePath: string) => {
       urlInput.value = filePath;
-      const chip = dialog.querySelector('#kb-file-chip');
+      const chip = dialog.querySelector('#kb-file-chip') as any;
       if (chip) chip.label = filePath.split('/').pop();
     });
   });
 
-  pasteBtn.addEventListener('click', async () => {
+  pasteBtn!.addEventListener('click', async () => {
     try {
       const text = await navigator.clipboard.readText();
       if (text) urlInput.value = text;
@@ -403,41 +409,41 @@ async function openCustomKeyboxDialog() {
     }
   });
 
-  clearBtn.addEventListener('click', async () => {
+  clearBtn!.addEventListener('click', async () => {
     cfgSet('kb_custom_type', '');
     cfgSet('kb_custom_value', '');
     cfgSet('kb_private', '');
-    showToast(t('custom_kb_cleared', 'Custom keybox cleared'), { icon: 'info', type: 'info', autoCloseDelay: 2500 });
-    dialog.close();
+    showToast(t('custom_kb_cleared', 'Custom keybox cleared'), { icon: 'info', type: 'info' as any, autoCloseDelay: 2500 });
+    (dialog as any).close();
   });
 
-  applyBtn.addEventListener('click', async () => {
+  applyBtn!.addEventListener('click', async () => {
     const moddir = getBridgeModuleDir();
     const text = urlInput.value.trim();
 
     if (!text) {
-      showToast('Enter a URL or device path', { icon: 'error', type: 'error', autoCloseDelay: 2500 });
+      showToast('Enter a URL or device path', { icon: 'error', type: 'error' as any, autoCloseDelay: 2500 });
       return;
     }
 
-    // Ask if this is a private keybox
-    const privateChoice = await new Promise(resolve => {
+    const privateChoice = await new Promise<boolean>(resolve => {
       const pd = document.createElement('md-dialog');
+      pd.setAttribute('type', 'alert');
       pd.innerHTML = `
         <div slot="headline">${t('custom_kb_title', 'Custom Keybox')}</div>
-        <div slot="content" style="text-align:center;padding:8px 16px">
-          <p style="font-size:0.9375rem;margin:8px 0">${t('custom_kb_private_ask', 'Is this a private keybox?')}</p>
+        <div slot="content" style="min-height:0;padding:8px 24px 16px">
+          <p style="margin:0;font-size:0.9375rem">${t('custom_kb_private_ask', 'Is this a private keybox?')}</p>
         </div>
         <div slot="actions">
-          <md-filled-tonal-button id="kb-pri-no" style="flex:1">${t('custom_kb_no', 'No')}</md-filled-tonal-button>
-          <md-filled-button id="kb-pri-yes" style="flex:1">${t('custom_kb_yes', 'Yes')}</md-filled-button>
+          <md-text-button id="kb-pri-no" value="no">${t('custom_kb_no', 'No')}</md-text-button>
+          <md-filled-tonal-button id="kb-pri-yes" value="yes">${t('custom_kb_yes', 'Yes')}</md-filled-tonal-button>
         </div>
       `;
       document.body.appendChild(pd);
-      pd.querySelector('#kb-pri-no').addEventListener('click', () => { pd.close(); resolve(false); });
-      pd.querySelector('#kb-pri-yes').addEventListener('click', () => { pd.close(); resolve(true); });
+      pd.querySelector('#kb-pri-no')!.addEventListener('click', () => { (pd as any).close(); resolve(false); });
+      pd.querySelector('#kb-pri-yes')!.addEventListener('click', () => { (pd as any).close(); resolve(true); });
       pd.addEventListener('close', () => document.body.removeChild(pd));
-      pd.show();
+      (pd as any).show();
     });
 
     if (privateChoice) {
@@ -448,49 +454,43 @@ async function openCustomKeyboxDialog() {
       }
       cfgSet('kb_custom_value', text);
       cfgSet('kb_private', 'true');
-      showToast(t('custom_kb_applied', 'Custom keybox configured'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
-      dialog.close();
+      await cfgFlush();
+      const result: any = await exec(`sh ${shellEscape(moddir + '/features/keybox.sh')}`);
+      if (result.code === 0) {
+        showToast(t('custom_kb_installed', 'Custom keybox installed'), { icon: 'check_circle', type: 'success' as any, autoCloseDelay: 3000 });
+      } else {
+        showToast(t('custom_kb_install_failed', 'Install failed'), { icon: 'error', type: 'error' as any, autoCloseDelay: 5000 });
+      }
+      (dialog as any).close();
       return;
     }
 
-    // Not private — detect via catalog
-    const detectingToast = showToast(t('custom_kb_detecting', 'Detecting keybox...'), { icon: 'info', type: 'info', autoCloseDelay: 30000 });
+    const detectingToast = showToast(t('custom_kb_detecting', 'Detecting keybox...'), { icon: 'info', type: 'info' as any, autoCloseDelay: 30000 });
 
     try {
       let serial = '';
 
       if (text.startsWith('http://') || text.startsWith('https://')) {
-        const { stdout } = await exec(
+        const result: any = await exec(
           `curl -s ${shellEscape(text)} > /data/local/tmp/_kb_check.xml 2>/dev/null && ` +
           `. ${moddir}/lib/common.sh && decode_keybox_serial /data/local/tmp/_kb_check.xml`
         );
-        serial = (stdout || '').trim();
-
-        if (!serial) {
-          const { stdout: s2 } = await exec(
-            `. ${moddir}/lib/common.sh && _b64=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /data/local/tmp/_kb_check.xml | head -20 | grep -v 'CERTIFICATE' | tr -d '\\n') && [ -n "$_b64" ] && _hex=$(echo "$_b64" | base64 -d 2>/dev/null | od -v -tx1 | awk 'BEGIN{ORS=""} {for(i=2;i<=NF;i++) printf "%s", $i}') && _parse_serial "$_hex" && echo "$_serial"`
-          );
-          serial = (s2 || '').trim();
-        }
+        serial = (result.stdout || '').trim();
       } else if (text.startsWith('/')) {
-        const { stdout } = await exec(
+        const result: any = await exec(
           `. ${moddir}/lib/common.sh && decode_keybox_serial ${shellEscape(text)}`
         );
-        serial = (stdout || '').trim();
-        if (!serial) {
-          const { stdout: s2 } = await exec(
-            `. ${moddir}/lib/common.sh && _b64=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' ${shellEscape(text)} | head -20 | grep -v 'CERTIFICATE' | tr -d '\\n') && [ -n "$_b64" ] && _hex=$(echo "$_b64" | base64 -d 2>/dev/null | od -v -tx1 | awk 'BEGIN{ORS=""} {for(i=2;i<=NF;i++) printf "%s", $i}') && _parse_serial "$_hex" && echo "$_serial"`
-          );
-          serial = (s2 || '').trim();
-        }
+        serial = (result.stdout || '').trim();
       }
 
-      let catalogInfo = null;
+      let catalogInfo: any = null;
       if (serial) {
         try {
-          const catalogRes = await fetch(`${API_URLS.KEY_CATALOG_LOOKUP}?serial=${serial}`);
+          const catalogRes = await fetch(API_URLS.KEY_CATALOG);
           if (catalogRes.ok) {
-            catalogInfo = await catalogRes.json();
+            const catalogData = await catalogRes.json();
+            const entries: Array<{ serial: string; source: string; version: string; text: string; revoked: boolean }> = catalogData?.entries || [];
+            catalogInfo = entries.find(e => e.serial === serial) || null;
           }
         } catch (e) {
           console.warn('Catalog fetch failed:', e);
@@ -523,8 +523,8 @@ async function openCustomKeyboxDialog() {
       `;
       document.body.appendChild(detectedDialog);
 
-      detectedDialog.querySelector('#kb-detect-cancel').addEventListener('click', () => detectedDialog.close());
-      detectedDialog.querySelector('#kb-detect-apply').addEventListener('click', () => {
+      detectedDialog.querySelector('#kb-detect-cancel')!.addEventListener('click', () => (detectedDialog as any).close());
+      detectedDialog.querySelector('#kb-detect-apply')!.addEventListener('click', async () => {
         if (text.startsWith('http://') || text.startsWith('https://')) {
           cfgSet('kb_custom_type', 'url');
         } else {
@@ -532,31 +532,37 @@ async function openCustomKeyboxDialog() {
         }
         cfgSet('kb_custom_value', text);
         cfgSet('kb_private', '');
-        showToast(t('custom_kb_applied', 'Custom keybox configured'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
-        detectedDialog.close();
-        dialog.close();
+        await cfgFlush();
+        const result: any = await exec(`sh ${shellEscape(moddir + '/features/keybox.sh')}`);
+        if (result.code === 0) {
+          showToast(t('custom_kb_installed', 'Custom keybox installed'), { icon: 'check_circle', type: 'success' as any, autoCloseDelay: 3000 });
+        } else {
+          showToast(t('custom_kb_install_failed', 'Install failed'), { icon: 'error', type: 'error' as any, autoCloseDelay: 5000 });
+        }
+        (detectedDialog as any).close();
+        (dialog as any).close();
       });
       detectedDialog.addEventListener('close', () => document.body.removeChild(detectedDialog));
-      closeToast(detectingToast);
-      detectedDialog.show();
+      closeToast(detectingToast!);
+      (detectedDialog as any).show();
 
     } catch (e) {
       console.warn('Keybox detection failed:', e);
-      closeToast(detectingToast);
-      showToast('Failed to detect keybox', { icon: 'error', type: 'error', autoCloseDelay: 3000 });
+      closeToast(detectingToast!);
+      showToast('Failed to detect keybox', { icon: 'error', type: 'error' as any, autoCloseDelay: 3000 });
     }
   });
 
   dialog.addEventListener('close', () => {
     document.body.removeChild(dialog);
   });
-  dialog.show();
+  (dialog as any).show();
 }
 
 function wireBlacklistToggle() {
-  const sw = document.getElementById('blacklist-switch');
+  const sw = document.getElementById('blacklist-switch') as any;
   const editor = document.getElementById('blacklist-editor');
-  const input = document.getElementById('blacklist-input');
+  const input = document.getElementById('blacklist-input') as any;
   const saveBtn = document.getElementById('blacklist-save-btn');
   const resetBtn = document.getElementById('blacklist-reset-btn');
   if (!sw) return;
@@ -579,7 +585,7 @@ function wireBlacklistToggle() {
   if (saveBtn && input) {
     saveBtn.addEventListener('click', async () => {
       await saveBlacklistContent(input.value);
-      showToast('Blacklist saved', { icon: 'check_circle', type: 'success', autoCloseDelay: 2000 });
+      showToast('Blacklist saved', { icon: 'check_circle', type: 'success' as any, autoCloseDelay: 2000 });
     });
   }
 
@@ -597,7 +603,7 @@ function wireBlacklistToggle() {
       ].join('\n');
       if (input) input.value = defaults;
       await saveBlacklistContent(defaults);
-      showToast('Blacklist reset to defaults', { icon: 'check_circle', type: 'success', autoCloseDelay: 2000 });
+      showToast('Blacklist reset to defaults', { icon: 'check_circle', type: 'success' as any, autoCloseDelay: 2000 });
     });
   }
 }
@@ -605,7 +611,7 @@ function wireBlacklistToggle() {
 function wireSmartmergeEditor() {
   const row = document.getElementById('smartmerge-row');
   const editor = document.getElementById('smartmerge-editor');
-  const input = document.getElementById('smartmerge-input');
+  const input = document.getElementById('smartmerge-input') as any;
   const saveBtn = document.getElementById('smartmerge-save-btn');
   if (!row || !editor) return;
 
@@ -622,14 +628,14 @@ function wireSmartmergeEditor() {
   if (saveBtn && input) {
     saveBtn.addEventListener('click', async () => {
       await saveSmartmergeContent(input.value);
-      showToast('SmartMerge saved', { icon: 'check_circle', type: 'success', autoCloseDelay: 2000 });
+      showToast('SmartMerge saved', { icon: 'check_circle', type: 'success' as any, autoCloseDelay: 2000 });
       editor.style.display = 'none';
     });
   }
 }
 
 function wireToggles() {
-  const recoverySw = document.getElementById('recovery-switch');
+  const recoverySw = document.getElementById('recovery-switch') as any;
   if (recoverySw) {
     recoverySw.addEventListener('change', async () => {
       if (recoverySw.selected) {
@@ -637,8 +643,7 @@ function wireToggles() {
       } else {
         await exec('rm -f /data/adb/Specter/twrp');
       }
-      showToast(recoverySw.selected ? 'Recovery hiding enabled' : 'Recovery hiding disabled', { icon: 'check_circle', type: 'success', autoCloseDelay: 2000 });
+      showToast(recoverySw.selected ? 'Recovery hiding enabled' : 'Recovery hiding disabled', { icon: 'check_circle', type: 'success' as any, autoCloseDelay: 2000 });
     });
   }
 }
-

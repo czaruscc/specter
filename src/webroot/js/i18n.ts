@@ -1,7 +1,7 @@
 import { cfgGet, cfgSet } from './cfg.js';
 
-let currentStrings = {};
-let fallbackStrings = {};
+let currentStrings: Record<string, string> = {};
+let fallbackStrings: Record<string, string> = {};
 
 export async function initI18n() {
   try {
@@ -10,7 +10,7 @@ export async function initI18n() {
   } catch (e) { console.warn('Failed to load fallback strings:', e); fallbackStrings = {}; }
 
   const saved = await cfgGet('lang', 'auto') || 'auto';
-  let langCode;
+  let langCode: string;
   if (saved === 'auto') {
     const detected = (navigator.language || '').slice(0, 2);
     const available = ['en', 'zh', 'ru', 'es', 'ar'];
@@ -22,7 +22,7 @@ export async function initI18n() {
   wireLanguageSelect(langCode);
 }
 
-export async function applyLanguage(langCode) {
+export async function applyLanguage(langCode: string) {
   const url = langCode === 'en'
     ? `lang/source/string.json?ts=${Date.now()}`
     : `lang/${langCode}.json?ts=${Date.now()}`;
@@ -40,13 +40,14 @@ export async function applyLanguage(langCode) {
   document.dispatchEvent(new CustomEvent('languageChanged', { detail: { langCode } }));
 }
 
-export function getTranslation(key) {
+export function getTranslation(key: string): string | null {
   return currentStrings[key] || fallbackStrings[key] || null;
 }
 
 function applyTranslations() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.dataset.i18n;
+    const key = (el as HTMLElement).dataset.i18n;
+    if (!key) return;
 
     if (el.tagName === 'TITLE') {
       const val = currentStrings[key] || fallbackStrings[key];
@@ -58,7 +59,7 @@ function applyTranslations() {
     if (!val) return;
 
     if (el.tagName === 'MD-NAVIGATION-TAB' || el.tagName === 'MD-ASSIST-CHIP' || el.tagName === 'MD-FILTER-CHIP') {
-      el.label = val;
+      (el as any).label = val;
       return;
     }
 
@@ -71,14 +72,15 @@ function applyTranslations() {
   });
 
   document.querySelectorAll('md-filter-chip[data-preset]').forEach(chip => {
-    const preset = chip.dataset.preset;
+    const preset = (chip as HTMLElement).dataset.preset;
+    if (!preset) return;
     const key = 'theme_preset_' + preset;
     const val = currentStrings[key] || fallbackStrings[key];
-    if (val) chip.label = val;
+    if (val) (chip as any).label = val;
   });
 }
 
-function wireLanguageSelect(currentLang) {
+function wireLanguageSelect(currentLang: string) {
   const select = document.getElementById('language-select');
   if (!select) return;
 
@@ -87,7 +89,7 @@ function wireLanguageSelect(currentLang) {
     customElements.whenDefined('md-select-option'),
   ]).then(async () => {
 
-  const LANGUAGES = [
+  const LANGUAGES: [string, string, string][] = [
     ['en', '🇬🇧', 'English'],
     ['zh', '🇨🇳', '中文'],
     ['ru', '🇷🇺', 'Русский'],
@@ -97,7 +99,7 @@ function wireLanguageSelect(currentLang) {
 
   LANGUAGES.forEach(([code, flag, name]) => {
     const item = document.createElement('md-select-option');
-    item.value = code;
+    (item as any).value = code;
     const headline = document.createElement('div');
     headline.slot = 'headline';
     headline.textContent = `${flag} ${name}`;
@@ -105,7 +107,7 @@ function wireLanguageSelect(currentLang) {
     item.addEventListener('click', async () => {
       try {
         await applyLanguage(code);
-        select.value = code;
+        (select as any).value = code;
       } catch (e) {
         console.warn('Language change failed:', e);
       }
@@ -114,6 +116,6 @@ function wireLanguageSelect(currentLang) {
   });
 
   await new Promise(r => requestAnimationFrame(r));
-  select.value = currentLang;
+  (select as any).value = currentLang;
   });
 }

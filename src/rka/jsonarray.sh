@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# jsonarray — flat JSON array manipulation library
+# jsonarray - flat JSON array manipulation library
 # Contributed by mhmrdd <https://github.com/mhmrdd>
 #
 #   ja_count    <file>                          -> integer

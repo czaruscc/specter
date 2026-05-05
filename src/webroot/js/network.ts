@@ -2,14 +2,23 @@ import { showToast } from './toast.js';
 import { ONLINE_ENDPOINTS } from './constants.js';
 import { getTranslation } from './i18n.js';
 
-let lastStatus = null;
-let networkInterval = null;
+let lastStatus: boolean | null = null;
+let networkInterval: ReturnType<typeof setInterval> | null = null;
 
 export function initNetwork() {
   updateNetworkStatus();
   networkInterval = setInterval(updateNetworkStatus, 3000);
   window.addEventListener('online', updateNetworkStatus);
   window.addEventListener('offline', updateNetworkStatus);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (networkInterval) clearInterval(networkInterval);
+      networkInterval = null;
+    } else if (!networkInterval) {
+      updateNetworkStatus();
+      networkInterval = setInterval(updateNetworkStatus, 3000);
+    }
+  });
   window.addEventListener('beforeunload', () => {
     if (networkInterval) clearInterval(networkInterval);
   });
@@ -38,14 +47,11 @@ async function updateNetworkStatus() {
   if (netAnnounce) netAnnounce.textContent = online ? onlineText : offlineText;
 
   if (!online && wasOnline === true) {
-
-    if (wasOnline === true) {
-      showToast(offlineText);
-    }
+    showToast(offlineText);
   }
 }
 
-async function checkOnline() {
+async function checkOnline(): Promise<boolean> {
   if (!navigator.onLine) return false;
   for (const endpoint of ONLINE_ENDPOINTS) {
     try {

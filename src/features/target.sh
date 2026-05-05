@@ -55,6 +55,7 @@ com.devadvance.rootcloak
 com.devadvance.rootcloakplus
 mmrl
 EOF
+  log "TARGET" "Default blacklist created"
 fi
 
 _customize="/sdcard/Specter/customize.txt"

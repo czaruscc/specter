@@ -31,18 +31,21 @@ if [ -n "$_custom_type" ] && [ -n "$_custom_value" ]; then
       if [ -f "$_custom_value" ]; then
         cp "$_custom_value" "$TARGET_FILE" || die "Failed to copy custom keybox"
         log "KEYBOX" "Custom keybox installed from $_custom_value"
-        rm -f "$TEMP_FILE"
+        printf '%s' "" > "$CONFIG_DIR/kb_custom_type.val" 2>/dev/null || true
+        printf '%s' "" > "$CONFIG_DIR/kb_custom_value.val" 2>/dev/null || true
         exit 0
       fi
       log "KEYBOX" "Error: Custom keybox file not found: $_custom_value"
-      rm -f "$TEMP_FILE"
+      printf '%s' "" > "$CONFIG_DIR/kb_custom_type.val" 2>/dev/null || true
+      printf '%s' "" > "$CONFIG_DIR/kb_custom_value.val" 2>/dev/null || true
       exit 1
       ;;
     url)
       log "KEYBOX" "Downloading custom keybox from URL..."
       download "$_custom_value" > "$TEMP_FILE" || {
         log "KEYBOX" "Error: Custom URL download failed"
-        rm -f "$TEMP_FILE"
+        printf '%s' "" > "$CONFIG_DIR/kb_custom_type.val" 2>/dev/null || true
+        printf '%s' "" > "$CONFIG_DIR/kb_custom_value.val" 2>/dev/null || true
         [ -f "$BACKUP_FILE" ] && cp "$BACKUP_FILE" "$TARGET_FILE"
         exit 1
       }
@@ -51,8 +54,9 @@ if [ -n "$_custom_type" ] && [ -n "$_custom_value" ]; then
       else
         cp "$TEMP_FILE" "$TARGET_FILE" || die "Failed to copy keybox"
       fi
-      rm -f "$TEMP_FILE"
       log "KEYBOX" "Custom keybox installed from URL"
+      printf '%s' "" > "$CONFIG_DIR/kb_custom_type.val" 2>/dev/null || true
+      printf '%s' "" > "$CONFIG_DIR/kb_custom_value.val" 2>/dev/null || true
       exit 0
       ;;
   esac
@@ -88,12 +92,16 @@ else
     [ -n "$_working_source" ] && [ -n "$_working_version" ] || die "No working keybox available (all revoked?)"
     _DL_SOURCE="$_working_source"
     _DL_VER="$_working_version"
-    log "KEYBOX" "Auto-selected: $_working_source $_working_version"
+    _DL_TEXT=$(echo "$_history" | grep -o '"source":"'"$_DL_SOURCE"'"[^}]*"version":"'"$_DL_VER"'"[^}]*"text":"[^"]*"' | sed 's/.*"text":"\([^"]*\)".*/\1/')
+    [ -z "$_DL_TEXT" ] && _DL_TEXT="$_DL_VER"
+    log "KEYBOX" "Auto-selected: $_DL_SOURCE $_DL_TEXT"
   else
     _DL_SOURCE="$_provider"
     _DL_VER=$(echo "$_history" | grep -o '"source":"'"$_provider"'"[^}]*"version":"[^"]*"' | sed 's/.*"version":"\([^"]*\)".*/\1/' | sort -rn | head -1)
     [ -n "$_DL_VER" ] || die "No versions found for provider '$_provider'"
-    log "KEYBOX" "Selected provider: $_provider $_DL_VER"
+    _DL_TEXT=$(echo "$_history" | grep -o '"source":"'"$_DL_SOURCE"'"[^}]*"version":"'"$_DL_VER"'"[^}]*"text":"[^"]*"' | sed 's/.*"text":"\([^"]*\)".*/\1/')
+    [ -z "$_DL_TEXT" ] && _DL_TEXT="$_DL_VER"
+    log "KEYBOX" "Selected provider: $_DL_SOURCE $_DL_TEXT"
   fi
 fi
 
@@ -103,33 +111,41 @@ _DL_URL="${KEYBOX_URL}/${_DL_SOURCE}/${_DL_VER}"
 log "KEYBOX" "Downloading keybox..."
 download "$_DL_URL" > "$TEMP_FILE" || {
   log "KEYBOX" "Error: Download failed"
-  rm -f "$TEMP_FILE" "$DECODE_FILE"
   [ -f "$BACKUP_FILE" ] && cp "$BACKUP_FILE" "$TARGET_FILE"
   exit 1
 }
 
 if ! base64 -d "$TEMP_FILE" > "$DECODE_FILE" 2>/dev/null; then
   log "KEYBOX" "Error: Base64 decode failed"
-  rm -f "$TEMP_FILE" "$DECODE_FILE"
   [ -f "$BACKUP_FILE" ] && cp "$BACKUP_FILE" "$TARGET_FILE"
   exit 1
 fi
 
 [ -s "$DECODE_FILE" ] || {
   log "KEYBOX" "Error: Decoded keybox is empty"
-  rm -f "$TEMP_FILE" "$DECODE_FILE"
   [ -f "$BACKUP_FILE" ] && cp "$BACKUP_FILE" "$TARGET_FILE"
   exit 1
 }
 
 _has_ecdsa=$(sed -n '/<Key algorithm="ecdsa">/,/<\/Key>/p' "$DECODE_FILE" 2>/dev/null)
 _has_rsa=$(sed -n '/<Key algorithm="rsa">/,/<\/Key>/p' "$DECODE_FILE" 2>/dev/null)
-_has_id=$(( $(grep -c '<serial>' "$DECODE_FILE" 2>/dev/null || echo 0) + $(grep -c 'DeviceID' "$DECODE_FILE" 2>/dev/null || echo 0) ))
+_has_id=$(( $(grep -c '<serial>' "$DECODE_FILE" 2>/dev/null || true) + $(grep -c 'DeviceID' "$DECODE_FILE" 2>/dev/null || true) ))
 
+[ -z "$_has_ecdsa" ] && [ -z "$_has_rsa" ] && die "No valid attestation keys found"
+[ "$_has_id" -eq 0 ] && die "No identifier field found (serial/DeviceID)"
 [ -n "$_has_ecdsa" ] || log "KEYBOX" "Warning: Missing ECDSA key block"
 [ -n "$_has_rsa" ] || log "KEYBOX" "Warning: Missing RSA key block"
-[ -z "$_has_ecdsa" ] && [ -z "$_has_rsa" ] && log "KEYBOX" "Warning: No valid attestation keys found"
-[ "$_has_id" -eq 0 ] && log "KEYBOX" "Warning: No identifier field found (serial/DeviceID)"
+
+_serial=$(decode_keybox_serial "$DECODE_FILE" 2>/dev/null || echo "")
+if [ -n "$_serial" ]; then
+  log "KEYBOX" "Checking Google revocation for serial $_serial"
+  if check_google_revocation "$_serial"; then
+    log "KEYBOX" "Warning: Keybox is revoked by Google (installing anyway)"
+  fi
+  log "KEYBOX" "Keybox is not revoked"
+else
+  log "KEYBOX" "Warning: Could not extract serial for revocation check"
+fi
 
 _author=$(grep 'author=' /data/adb/modules/tricky_store/module.prop 2>/dev/null | head -1 | cut -d= -f2 | tr '[:upper:]' '[:lower:]')
 
@@ -151,7 +167,6 @@ case "$_author" in
       echo '</Keybox>'
       echo '</AndroidAttestation>'
     } > "$TRICKY_DIR/locked.xml"
-    rm -f "$TEMP_FILE" "$DECODE_FILE"
     printf '%s' "" > "$CONFIG_DIR/kb_private.val" 2>/dev/null || true
     log "KEYBOX" "Locked XML written to $TRICKY_DIR/locked.xml"
     log "KEYBOX" "Finish"
@@ -160,7 +175,6 @@ case "$_author" in
 esac
 
 mv "$DECODE_FILE" "$TARGET_FILE" || die "Failed to move decoded keybox to $TARGET_FILE"
-rm -f "$TEMP_FILE"
 printf '%s' "" > "$CONFIG_DIR/kb_private.val" 2>/dev/null || true
 log "KEYBOX" "Keybox installed successfully"
 log "KEYBOX" "Finish"

@@ -12,7 +12,11 @@ while [ "$(getprop sys.boot_completed)" != "1" ]; do
   sleep 1
 done
 
-_rm() { [ -n "$1" ] && rm -rf "$1" 2>/dev/null; }
+_rm() {
+  [ -n "$1" ] || return 0
+  [ -e "$1" ] || return 0
+  rm -rf "$1" 2>/dev/null || log "CLEANUP" "Warning: Failed to remove $1"
+}
 
 log "CLEANUP" "Hiding recovery folders..."
 hide_recovery_folders
@@ -23,10 +27,12 @@ for _pkg in $DETECTOR_APPS; do
   _rm "/storage/emulated/0/Android/obb/$_pkg"
   _rm "/storage/emulated/0/Android/media/$_pkg"
 done
+log "CLEANUP" "Detector app directories cleaned"
 
 log "CLEANUP" "Removing detector log files..."
 _rm "/storage/emulated/0/meow_detector.log"
 _rm "/storage/emulated/0/keybox_status.json"
+log "CLEANUP" "Detector logs removed"
 
 log "CLEANUP" "Removing tool app data directories..."
 for _pkg in $TOOL_APPS; do
@@ -43,6 +49,7 @@ _rm "/storage/emulated/0/最新版隐藏配置.json"
 _rm "/storage/emulated/0/rlgg"
 _rm "/storage/emulated/legacy"
 _rm "/storage/emulated/com.luckyzyx.luckytool"
+log "CLEANUP" "Tool app data removed"
 
 log "CLEANUP" "Removing remote control app data directories..."
 for _pkg in $REMOTE_CONTROL_APPS; do
@@ -54,6 +61,7 @@ _rm "/storage/emulated/0/.rustdesk"
 _rm "/storage/emulated/0/rustdesk"
 _rm "/storage/emulated/0/.vysor"
 _rm "/storage/emulated/0/Vysor"
+log "CLEANUP" "Remote control app data removed"
 
 log "CLEANUP" "Checking for suspicious properties..."
 _suspicious=0
@@ -62,10 +70,12 @@ for _prop in persist.hyperceiler.log.level persist.sys.vold_app_data_isolation_e
 done
 if [ "$_suspicious" = "1" ]; then
   log "CLEANUP" "Suspicious props detected, backing up and cleaning..."
-  [ -f "/data/property/persistent_properties" ] && cp -a "/data/property/persistent_properties" "/data/property/persistent_properties.bak" 2>/dev/null
-  for _prop in persist.hyperceiler.log.level persist.sys.vold_app_data_isolation_enabled persist.zygote.app_data_isolation persist.com.luckyzyx.luckytool.log.level persist.com.luckyzyx.luckytool.debug persist.com.luckyzyx.luckytool.enable; do
-    sed -i "/$_prop/d" "/data/property/persistent_properties" 2>/dev/null || true
-  done
+  if [ -f "/data/property/persistent_properties" ]; then
+    cp -a "/data/property/persistent_properties" "/data/property/persistent_properties.bak" 2>/dev/null || log "CLEANUP" "Warning: Failed to backup persistent properties"
+    for _prop in persist.hyperceiler.log.level persist.sys.vold_app_data_isolation_enabled persist.zygote.app_data_isolation persist.com.luckyzyx.luckytool.log.level persist.com.luckyzyx.luckytool.debug persist.com.luckyzyx.luckytool.enable; do
+      sed -i "/$_prop/d" "/data/property/persistent_properties" 2>/dev/null || log "CLEANUP" "Warning: Failed to remove $_prop"
+    done
+  fi
   log "CLEANUP" "Suspicious props cleaned"
 else
   log "CLEANUP" "No suspicious props found"
@@ -80,6 +90,7 @@ _rm "/data/local/tmp/HyperCeiler"
 _rm "/data/local/tmp/luckys"
 _rm "/data/local/tmp/input_devices"
 _rm "/data/local/tmp/resetprop"
+log "CLEANUP" "Temp files cleaned"
 
 log "CLEANUP" "Cleaning system data..."
 _rm "/data/system/graphicsstats"
@@ -95,9 +106,11 @@ _rm "/dev/scene"
 _rm "/dev/cpuset/scene-daemon"
 
 pm clear com.juom >/dev/null 2>&1 || true
+log "CLEANUP" "System data cleaned"
 
 log "CLEANUP" "Applying prop hardening..."
 apply_prop_hardening
+log "CLEANUP" "Prop hardening applied"
 
 log "CLEANUP" "Resetting USB and ADB properties..."
 check_prop "sys.usb.adb.disabled" "1"
@@ -114,6 +127,7 @@ check_prop "sys.oem_unlock_allowed" "0"
 check_prop "ro.kernel.qemu" "0"
 check_prop "ro.boot.qemu" "0"
 check_prop "ro.hardware.virtual_device" "0"
+log "CLEANUP" "USB/ADB properties reset"
 
 log "CLEANUP" "Removing persistent service props..."
 resetprop -p --delete persist.service.adb.enable 2>/dev/null || true
@@ -129,16 +143,19 @@ resetprop -p --delete persist.sys.dev_mode 2>/dev/null || true
 
 resetprop -n persist.sys.dev_mode 0
 resetprop -n persist.sys.debuggable 0
+log "CLEANUP" "Persistent service props removed"
 
 log "CLEANUP" "Applying boot hardening..."
 apply_boot_hardening
+log "CLEANUP" "Boot hardening applied"
 
 if [ "$(getenforce 2>/dev/null)" = "Enforcing" ]; then
   log "CLEANUP" "SELinux is Enforcing, locking boot properties..."
   resetprop ro.boot.selinux enforcing
   resetprop ro.build.selinux 1
+  log "CLEANUP" "Boot properties locked"
 fi
 
 unset _rm _pkg
-log "CLEANUP" "Finish"
+log "CLEANUP" "Cleanup completed"
 exit 0

@@ -1,4 +1,4 @@
-# Development Guide — Specter
+# Development Guide - Specter
 
 For full architecture reference, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 
@@ -8,36 +8,46 @@ For full architecture reference, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 |---|---|---|
 | `src/lib/` | 5 shared libraries | ~340 total |
 | `src/features/` | 16 feature scripts | varies |
-| `src/webroot/js/` | 20 ES modules | ~2100 total |
+| `src/webroot/js/` | 21 TypeScript modules | ~2300 total |
 | `src/webroot/css/app.css` | 1 stylesheet | ~790 |
 | `src/webroot/index.html` | 1 HTML page | ~460 |
 
 ## WebUI Architecture
 
-### Bridge (`src/webroot/js/bridge.js`)
+### Bridge (`src/webroot/js/bridge.ts`)
 
-Single bridge tier: `window.ksu.exec` — KernelSU/APatch native bridge. Spawn support via `window.ksu.spawn` if available, else emulated via raw exec.
+Single bridge tier: `window.ksu.exec` - KernelSU/APatch native bridge. Spawn support via `window.ksu.spawn` if available, else emulated via raw exec.
 
 Returns an event emitter with `on('data')` and `on('exit')` for live streaming to the terminal. `exec()` returns `{ stdout, stderr }` for simple commands.
 
-### Config Persistence (`src/webroot/js/cfg.js`)
+### Config Persistence (`src/webroot/js/cfg.ts`)
 
-```js
+```ts
 cfgGet(key, default)     # ksud module config get → cat config/*.val
 cfgSet(key, value)       # ksud module config set → printf > config/*.val (batched + debounced)
 ```
 
-Mirrors `lib/config_env.sh` on the shell side. Uses single-quote shell escaping to prevent injection. Batches writes with 500ms debounce timer.
+Mirrors `lib/config_env.sh` on the shell side. Uses `shellEscape` from `utils.ts` for shell-safe single-quote escaping. Batches writes with 500ms debounce timer. Old localStorage keys are migrated and removed.
 
-### Script Execution (`src/webroot/js/app.js`)
+### Script Execution (`src/webroot/js/app.ts`)
 
 Two modes:
 - **Simple mode**: progress dialog, toast on completion, output history saved
 - **Dev mode**: live terminal with real-time stdout/stderr, toggled via dev-mode switch
 
-### Theme (`src/webroot/js/theme.js`)
+### Theme (`src/webroot/js/theme.ts`)
 
 MWC Material 3 via CSS custom properties. 8 color presets (blue, yellow, red, purple, green, orange, pink, cyan, grey). Auto dark/light detection. Monet dynamic colors from wallpaper (Android 12+).
+
+## TypeScript
+
+The WebUI is written in TypeScript with `strict: true`. Run the type checker before committing:
+
+```sh
+npx tsc --noEmit
+```
+
+Shared interfaces live in `src/webroot/js/types.ts`. When adding a new data shape (e.g., a new JSON endpoint), add its interface there first.
 
 ## Pipeline System
 
@@ -83,10 +93,10 @@ The `apply_boot_hardening()` function (in `lib/common.sh`) runs `settings put` a
 ## Config Persistence (`lib/config_env.sh`)
 
 Dual-layer approach:
-- **KernelSU**: uses `ksud module config get/set/delete`
+- **KernelSU**: uses `ksud module config get/set`
 - **Magisk/APatch**: falls back to flat files in `/data/adb/Specter/config/*.val`
 
-Both layers are controlled by the same `cfg_get`/`cfg_set`/`cfg_delete` API. The WebUI mirrors this via shell `exec()`.
+Both layers are controlled by the same `cfg_get`/`cfg_set` API. The WebUI mirrors this via shell `exec()`.
 
 ## Feature Script Patterns
 

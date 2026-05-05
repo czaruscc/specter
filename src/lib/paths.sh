@@ -12,7 +12,7 @@ HMA_DIR="/data/user/0/org.frknkrc44.hma_oss/files"
 HMA_FILE="$HMA_DIR/config.json"
 IDFILE="/data/local/tmp/.rka_id"
 
-# Module-local paths — derived from MODDIR (set by caller before sourcing)
+# Module-local paths - derived from MODDIR (set by caller before sourcing)
 # Handles both feature scripts (MODDIR ends with /features) and root scripts
 if [ -n "$MODDIR" ]; then
   case "$MODDIR" in

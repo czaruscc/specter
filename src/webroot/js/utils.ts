@@ -1,4 +1,4 @@
-export function escapeHtml(str) {
+export function escapeHtml(str: string): string {
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -7,6 +7,6 @@ export function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-export function shellEscape(str) {
+export function shellEscape(str: string): string {
   return "'" + String(str).replace(/'/g, `'"'"'`) + "'";
 }

@@ -9,6 +9,7 @@
     "build:zip": "cd Module && rm -f ../module.zip && zip -r ../module.zip . && cd .."
   },
   "devDependencies": {
+    "typescript": "^6.0.3",
     "vite": "^8.0.4"
   },
   "dependencies": {

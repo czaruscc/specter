@@ -312,6 +312,21 @@ decode_keybox_serial() {
   echo "$_serial"
 }
 
+check_google_revocation() {
+  _gr_serial="$1"
+  _gr_resp=$(download "https://android.googleapis.com/attestation/status?encrypted=0" 2>/dev/null)
+  [ -z "$_gr_resp" ] && return 1
+
+  echo "$_gr_resp" | grep -q "\"$_gr_serial\"" && return 0
+
+  if command -v bc >/dev/null 2>&1; then
+    _gr_dec=$(echo "ibase=16; $(echo "$_gr_serial" | tr 'a-f' 'A-F')" | bc 2>/dev/null)
+    [ -n "$_gr_dec" ] && echo "$_gr_resp" | grep -q "\"$_gr_dec\"" && return 0
+  fi
+
+  return 1
+}
+
 find_kmInstallKeybox() {
   _fk_abi=$(getprop ro.product.cpu.abi 2>/dev/null || echo "arm64")
   _fk_lib_dir="/vendor/lib64"

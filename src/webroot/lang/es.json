@@ -72,7 +72,7 @@
   "theme_preset_green": "Green",
   "toast_error": "Falló",
   "toast_success": "Hecho ✓",
-  "toast_timeout": "Tiempo de espera agotado — verifica la instalación del módulo",
+  "toast_timeout": "Tiempo de espera agotado - verifica la instalación del módulo",
   "update_desc": "",
   "update_github": "Ver en GitHub",
   "update_note": "Únete a nuestro canal de Telegram o consulta GitHub para obtener actualizaciones, contribuciones y participar en debates técnicos.",

@@ -20,60 +20,71 @@ jobs:
         uses: actions/setup-node@v4
         with: { node-version: 22 }
 
-      - name: Extract version from changelog
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Extract version from module.prop
         id: version
         run: |
-          VERSION=$(grep -m 1 -oP 'v[0-9]+(\.[0-9]+)+' changelog.md)
-          if [ -z "$VERSION" ]; then
-            echo "No version found in changelog.md — add a '## vX.Y.Z' entry"
+          VERSION=$(grep '^version=' src/module.prop | cut -d= -f2)
+          VERSION_CODE=$(grep '^versionCode=' src/module.prop | cut -d= -f2)
+          if [ -z "$VERSION" ] || [ -z "$VERSION_CODE" ]; then
+            echo "Version not found in src/module.prop"
             exit 1
           fi
-          RAW_VERSION=$(echo "$VERSION" | sed 's/v//')
-          VERSION_CODE=$(echo "$RAW_VERSION" | awk -F. '{ printf "%d%02d%02d", $1, $2, $3 }')
+          TAG="${GITHUB_REF#refs/tags/}"
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "Tag ($TAG) does not match module.prop version ($VERSION)"
+            exit 1
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "raw_version=$RAW_VERSION" >> $GITHUB_OUTPUT
+          echo "raw_version=$(echo $VERSION | sed 's/v//')" >> $GITHUB_OUTPUT
           echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
 
-      - name: Update src/module.prop with release version
-        run: |
-          sed -i "s/^version=.*/version=${{ steps.version.outputs.version }}/" src/module.prop
-          sed -i "s/^versionCode=.*/versionCode=${{ steps.version.outputs.version_code }}/" src/module.prop
-
       - name: Build
-        run: npm ci && npm run build
-
-      - name: Update update.json with release info
-        run: |
-          ZIP_URL="https://github.com/dpejoh/specter/releases/download/${{ steps.version.outputs.version }}/Specter-${{ steps.version.outputs.version }}.zip"
-          jq --arg v "${{ steps.version.outputs.raw_version }}" \
-             --argjson vc "${{ steps.version.outputs.version_code }}" \
-             --arg url "$ZIP_URL" \
-             '.version = $v | .versionCode = $vc | .zipUrl = $url' \
-             update.json > update_tmp.json && mv update_tmp.json update.json
+        run: npm run build
 
       - name: Package module zip
         run: |
           cd Module
           zip -r "../Specter-${{ steps.version.outputs.version }}.zip" .
 
+      - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.version.outputs.version }}" \
+            --title "Specter ${{ steps.version.outputs.version }}" \
+            --notes-file changelog.md \
+            "Specter-${{ steps.version.outputs.version }}.zip"
+
+      - name: Update update.json
+        run: |
+          ZIP_URL="https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/Specter-${{ steps.version.outputs.version }}.zip"
+          jq --arg v "${{ steps.version.outputs.raw_version }}" \
+             --argjson vc "${{ steps.version.outputs.version_code }}" \
+             --arg url "$ZIP_URL" \
+             '.version = $v | .versionCode = $vc | .zipUrl = $url' \
+             update.json > update_tmp.json && mv update_tmp.json update.json
+
       - name: Commit version bump
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add src/module.prop update.json
+          git add update.json
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "chore: bump version to ${{ steps.version.outputs.raw_version }}"
+            git commit -m "chore: bump update.json to ${{ steps.version.outputs.version }} [skip ci]"
             git push
           fi
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: Specter ${{ steps.version.outputs.version }}
-          body_path: changelog.md
-          files: Specter-${{ steps.version.outputs.version }}.zip
-        env:
-          GITHUB_TOKEN: ${{ github.token }}

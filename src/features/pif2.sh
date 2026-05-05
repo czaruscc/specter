@@ -12,6 +12,8 @@ while IFS= read -r _prop; do
   [ -z "$_prop" ] && continue
   if resetprop -p --delete "$_prop" 2>/dev/null; then
     _deleted=$((_deleted + 1))
+  else
+    log "PIF2" "Warning: Failed to delete $_prop"
   fi
 done <<PROPS
 $(getprop 2>/dev/null | grep -E "pihook|pixelprops" | sed "s/^\[\(.*\)\]:.*/\1/")
@@ -26,7 +28,7 @@ for _prop in \
   "persist.sys.pixelprops.pi=false"; do
   _name="${_prop%%=*}"
   _val="${_prop#*=}"
-  resetprop -n -p "$_name" "$_val" 2>/dev/null && _disabled=$((_disabled + 1))
+  resetprop -n -p "$_name" "$_val" 2>/dev/null && _disabled=$((_disabled + 1)) || log "PIF2" "Warning: Failed to set $_name"
 done
 
 if [ -f "/data/system/gms_certified_props.json" ]; then

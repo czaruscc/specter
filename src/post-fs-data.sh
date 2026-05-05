@@ -11,20 +11,20 @@ log "POST-FS-DATA" "Early boot property setup"
 # Applied at post-fs-data stage before any system service reads them
 # ============================================================================
 
-# Samsung — warranty bit spoofing
+# Samsung - warranty bit spoofing
 resetprop_if_diff ro.boot.warranty_bit 0
 resetprop_if_diff ro.warranty_bit 0
 resetprop_if_diff ro.vendor.boot.warranty_bit 0
 resetprop_if_diff ro.vendor.warranty_bit 0
 
-# Realme — fingerprint scanner compatibility
+# Realme - fingerprint scanner compatibility
 resetprop_if_diff ro.boot.realme.lockstate 1
 resetprop_if_diff ro.boot.realmebootstate green
 
-# OnePlus — display mode compatibility
+# OnePlus - display mode compatibility
 resetprop_if_diff ro.is_ever_orange 0
 
-# Oppo / ColorOS — fingerprint compatibility
+# Oppo / ColorOS - fingerprint compatibility
 resetprop_if_diff ro.boot.vbmeta.device_state locked
 
 # ============================================================================
@@ -38,7 +38,7 @@ if resetprop 2>/dev/null | grep -qE \
   "persist\.sys\.pihooks|persist\.sys\.pixelprops|persist\.sys\.entryhooks" \
   || [ -f /data/system/gms_certified_props.json ]; then
 
-  log "POST-FS-DATA" "ROM spoof hooks detected — disabling built-in spoofing"
+  log "POST-FS-DATA" "ROM spoof hooks detected - disabling built-in spoofing"
 
   # PIHooks: re-enable blocking of GMS prop spoofing and key attestation
   persistprop persist.sys.pihooks.disable.gms_props true

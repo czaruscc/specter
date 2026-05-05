@@ -22,7 +22,7 @@ resetprop_if_diff ro.boot.veritymode.managed yes
 
 # --- Warranty & debug bits ---
 # Prevent apps detecting debug or engineering builds
-# Samsung warranty bit spoofing — required for Samsung device integrity
+# Samsung warranty bit spoofing - required for Samsung device integrity
 resetprop_if_diff ro.boot.warranty_bit 0
 resetprop_if_diff ro.warranty_bit 0
 resetprop_if_diff ro.vendor.boot.warranty_bit 0
@@ -55,7 +55,7 @@ resetprop_if_diff ro.boot.vbmeta.hash_alg sha256
 resetprop_if_diff ro.boot.vbmeta.avb_version 2.0
 
 # --- OEM-specific props ---
-# MIUI secureboot — Xiaomi devices check this for boot state
+# MIUI secureboot - Xiaomi devices check this for boot state
 resetprop_if_diff ro.secureboot.lockstate locked
 # avoid breaking Realme fingerprint scanners
 resetprop_if_diff ro.boot.realme.lockstate 1
@@ -92,6 +92,7 @@ resetprop_if_diff ro.boot.selinux enforcing
 # --- Crypto ---
 # Hide unencrypted state from apps checking ro.crypto.state
 resetprop_if_diff ro.crypto.state encrypted
+log "SERVICE" "Boot properties set"
 
 # ============================================================================
 # AFTER BOOT COMPLETED
@@ -99,33 +100,38 @@ resetprop_if_diff ro.crypto.state encrypted
 
 # KernelSU / APatch: boot-completed.sh handles hardening
 [ "$KSU" = "true" ] && {
-  log "SERVICE" "KernelSU/APatch detected — boot-completed.sh handles hardening"
+  log "SERVICE" "KernelSU/APatch detected - boot-completed.sh handles hardening"
   exit 0
 }
 
 # Magisk: poll sys.boot_completed, then apply hardening
-log "SERVICE" "Magisk detected — waiting for boot completion"
+log "SERVICE" "Magisk detected - waiting for boot completion"
 while [ "$(getprop sys.boot_completed)" != "1" ]; do
   sleep 1
 done
-log "SERVICE" "Boot completed — applying hardening"
+log "SERVICE" "Boot completed - applying hardening"
 
 # Apply boot hardening (settings + prop deletes)
 apply_boot_hardening
+log "SERVICE" "Boot hardening applied"
 
-# DroidGuard killer — force-stop GMS and related services to break attestation
+# DroidGuard killer - force-stop GMS and related services to break attestation
+log "SERVICE" "Force-stopping GMS packages..."
 for _pkg in $GMS_KILL_LIST; do
-  am force-stop "$_pkg" 2>/dev/null || true
+  am force-stop "$_pkg" 2>/dev/null || log "SERVICE" "Warning: Failed to stop $_pkg"
 done
 unset _pkg
+log "SERVICE" "GMS packages stopped"
 
 # Hide TWRP / OrangeFox / FOX recovery folders from /sdcard
+log "SERVICE" "Hiding recovery folders..."
 hide_recovery_folders
+log "SERVICE" "Recovery folders hidden"
 
-# Delayed spoofing — 120s delay to re-apply props that system may have overridden
+# Delayed spoofing - 120s delay to re-apply props that system may have overridden
 (
   sleep 120
-  log "SERVICE" "Delayed spoofing — reapplying critical props"
+  log "SERVICE" "Delayed spoofing - reapplying critical props"
   resetprop_if_diff ro.crypto.state encrypted
   resetprop_if_diff ro.build.tags release-keys
   hide_recovery_folders

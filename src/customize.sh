@@ -8,7 +8,6 @@ _vol() {
     case "$_vol_key" in
       *KEY_VOLUMEUP*)   unset _vol_key; return 0 ;;
       *KEY_VOLUMEDOWN*) unset _vol_key; return 1 ;;
-      *KEY_POWER*)      unset _vol_key; return 2 ;;
     esac
     unset _vol_key
   done
@@ -49,7 +48,6 @@ if [ "$_ts_found" = true ]; then
   ui_print " Install a keybox?"
   ui_print "  Vol Up   = Yes"
   ui_print "  Vol Down = No (install later)"
-  ui_print "  Power    = Abort installation"
   ui_print ""
 
   _vol; _choice=$?
@@ -98,10 +96,7 @@ if [ "$_ts_found" = true ]; then
       ui_print "- Install from the action button or WebUI later."
       rm -f "$TEMP_FILE" "$DECODE_FILE" 2>/dev/null
       ;;
-    2)
-      ui_print "- Aborted by user."
-      return 1
-      ;;
+
   esac
   unset _choice
 

@@ -22,7 +22,7 @@ log "WIDEVINE" "Attestation key downloaded successfully"
 chmod 755 "$_attestation_file" 2>/dev/null || log "WIDEVINE" "Warning: Failed to set permissions on attestation"
 chown root:root "$_attestation_file" 2>/dev/null || log "WIDEVINE" "Warning: Failed to set owner on attestation"
 
-_abi=$(getprop ro.product.cpu.abi 2>/dev/null)
+_abi=$(getprop ro.product.cpu.abi 2>/dev/null) || log "WIDEVINE" "Warning: Failed to read CPU ABI"
 case "$_abi" in
   arm64|x86_64) _lib="/vendor/lib64/hw" ;;
   *)            _lib="/vendor/lib/hw" ;;

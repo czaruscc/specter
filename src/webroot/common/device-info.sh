@@ -1,6 +1,7 @@
 #!/system/bin/sh
-. /data/adb/modules/Specter/lib/common.sh 2>/dev/null
-MODULE_ROOT=$(resolve_module_root)
+MODULE_ROOT="${0%/*}"
+MODULE_ROOT="${MODULE_ROOT%/webroot/common}"
+. "$MODULE_ROOT/lib/common.sh"
 
 INFO_PATH="$MODULE_ROOT/webroot/json/info.json"
 
@@ -27,7 +28,6 @@ elif [ -d "/data/adb/magisk" ] && [ -f "/data/adb/magisk.db" ]; then
 fi
 
 # Root solution
-. /data/adb/modules/Specter/lib/common.sh 2>/dev/null
 detect_root_solution
 ROOT_SOL=$ROOT_SOL
 

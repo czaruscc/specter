@@ -8,7 +8,7 @@ MODDIR=${0%/*}
 . "$MODDIR/lib/paths.sh"
 . "$MODDIR/lib/config_env.sh"
 
-log "BOOT" "Boot completed — finalizing"
+log "BOOT" "Boot completed - finalizing"
 
 apply_boot_hardening
 

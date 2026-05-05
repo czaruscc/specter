@@ -1,6 +1,6 @@
 import { escapeHtml } from './utils.js';
 
-export function showErrorDialog(title, content) {
+export function showErrorDialog(title: string, content: string) {
   const dialog = document.createElement('md-dialog');
   dialog.innerHTML = `
     <div slot="headline">${escapeHtml(title)}</div>
@@ -10,7 +10,7 @@ export function showErrorDialog(title, content) {
     </div>
   `;
   document.body.appendChild(dialog);
-  dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
+  dialog.querySelector('.dialog-close')!.addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => document.body.removeChild(dialog));
   dialog.show();
 }

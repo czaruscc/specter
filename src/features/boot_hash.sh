@@ -37,9 +37,9 @@ fi
 
 ensure_dir "$(dirname "$BOOT_HASH_FILE")"
 echo "$_boot_hash" > "$BOOT_HASH_FILE" || die "Failed to write $BOOT_HASH_FILE"
-chmod 644 "$BOOT_HASH_FILE" 2>/dev/null
+chmod 644 "$BOOT_HASH_FILE" 2>/dev/null || log "BOOT_HASH" "Warning: Failed to set permissions on $BOOT_HASH_FILE"
 
-resetprop -n ro.boot.vbmeta.digest "$_boot_hash" 2>/dev/null
+resetprop -n ro.boot.vbmeta.digest "$_boot_hash" 2>/dev/null || log "BOOT_HASH" "Warning: Failed to set vbmeta.digest"
 log "BOOT_HASH" "Set vbmeta.digest = $_boot_hash"
 
 unset _slot _vbmeta _boot_hash _vbsize _vbhash

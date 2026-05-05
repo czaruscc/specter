@@ -2,7 +2,7 @@ import { CorePalette, Scheme } from '@material/material-color-utilities';
 import { cfgGet, cfgSet } from './cfg.js';
 import { exec } from './bridge.js';
 
-const PRESETS = {
+const PRESETS: Record<string, string> = {
   blue:   '#1157CE',
   yellow: '#8F4E06',
   red:    '#B3251E',
@@ -14,10 +14,10 @@ const PRESETS = {
   grey:   '#5E5E5E',
 };
 
-let currentPreset = 'blue';
-let currentSeed = null;
+let currentPreset: string = 'blue';
+let currentSeed: string | null = null;
 
-export async function initTheme(savedMode) {
+export async function initTheme(savedMode: string) {
   const preset = await cfgGet('theme_preset', 'monet') || 'monet';
   currentPreset = preset;
   const mode = savedMode || 'dark';
@@ -25,7 +25,7 @@ export async function initTheme(savedMode) {
   await customElements.whenDefined('md-filter-chip');
   await customElements.whenDefined('md-outlined-segmented-button');
   document.querySelectorAll('.preset-chip').forEach(chip => {
-    chip.selected = chip.dataset.preset === preset;
+    (chip as any).selected = (chip as HTMLElement).dataset.preset === preset;
   });
 
   if (preset === 'monet') {
@@ -37,35 +37,33 @@ export async function initTheme(savedMode) {
   wireThemeControls();
 }
 
-async function extractMonetColor() {
+async function extractMonetColor(): Promise<string | null> {
   try {
-    const commands = [
+    const cmd = [
       `cmd overlay lookup com.android.systemui android:color/system_accent1_500 2>/dev/null`,
       `settings get secure monet_engine_seed 2>/dev/null`,
       `getprop persist.sys.theme.color 2>/dev/null`,
       `dumpsys wallpaper 2>/dev/null | grep -oE '0x[0-9a-fA-F]{8}' | head -1 | tr -d '\\n'`,
-    ];
+    ].join(' || ');
 
-    for (const cmd of commands) {
-      const { stdout } = await exec(cmd);
-      const hex = stdout?.trim();
-      if (!hex) continue;
+    const result = await exec(cmd);
+    const hex = ((result as any).stdout || '').trim();
+    if (!hex) return null;
 
-      let argb;
-      if (/^0x[0-9a-fA-F]{8}$/.test(hex)) {
-        argb = parseInt(hex, 16);
-      } else if (/^#[0-9a-fA-F]{8}$/.test(hex)) {
-        argb = parseInt(hex.slice(1), 16);
-      } else if (/^#?[0-9a-fA-F]{6}$/.test(hex.replace('#', ''))) {
-        argb = parseInt(hex.replace('#', ''), 16) | 0xFF000000;
-      } else if (/^\d+$/.test(hex) && hex.length > 6) {
-        argb = parseInt(hex, 10);
-      }
+    let argb: number | undefined;
+    if (/^0x[0-9a-fA-F]{8}$/.test(hex)) {
+      argb = parseInt(hex, 16);
+    } else if (/^#[0-9a-fA-F]{8}$/.test(hex)) {
+      argb = parseInt(hex.slice(1), 16);
+    } else if (/^#?[0-9a-fA-F]{6}$/.test(hex.replace('#', ''))) {
+      argb = parseInt(hex.replace('#', ''), 16) | 0xFF000000;
+    } else if (/^\d+$/.test(hex) && hex.length > 6) {
+      argb = parseInt(hex, 10);
+    }
 
-      if (argb && !isNaN(argb)) {
-        const seed = '#' + (argb & 0x00FFFFFF).toString(16).padStart(6, '0');
-        if (seed !== '#000000') return seed;
-      }
+    if (argb && !isNaN(argb)) {
+      const seed = '#' + (argb & 0x00FFFFFF).toString(16).padStart(6, '0');
+      if (seed !== '#000000') return seed;
     }
   } catch (e) {
     console.warn('Failed to extract monet color:', e);
@@ -73,14 +71,14 @@ async function extractMonetColor() {
   return null;
 }
 
-function resolveMode(mode) {
+function resolveMode(mode: string): string {
   return mode === 'auto'
     ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
     : mode;
 }
 
-async function applyMonetPreset(mode) {
-  let seed = await cfgGet('monet_seed', null);
+async function applyMonetPreset(mode: string) {
+  let seed = (await cfgGet('monet_seed')) as string | null;
   if (!seed) {
     seed = await extractMonetColor();
     if (seed) {
@@ -99,7 +97,7 @@ async function applyMonetPreset(mode) {
   generateScheme(seed, resolved === 'dark');
 }
 
-function applyMode(mode) {
+function applyMode(mode: string) {
   const resolved = resolveMode(mode);
   document.documentElement.setAttribute('data-theme', mode);
   document.documentElement.setAttribute('data-theme-resolved', resolved);
@@ -108,7 +106,7 @@ function applyMode(mode) {
   const group = document.getElementById('theme-mode-group');
   if (group) {
     group.querySelectorAll('md-outlined-segmented-button').forEach(btn => {
-      btn.selected = btn.getAttribute('value') === mode;
+      (btn as any).selected = btn.getAttribute('value') === mode;
     });
   }
 
@@ -116,10 +114,10 @@ function applyMode(mode) {
   generateScheme(seed, resolved === 'dark');
 }
 
-function applyPreset(preset) {
+function applyPreset(preset: string) {
   if (preset === 'monet') {
     document.querySelectorAll('.preset-chip').forEach(chip => {
-      chip.selected = chip.dataset.preset === 'monet';
+      (chip as any).selected = (chip as HTMLElement).dataset.preset === 'monet';
     });
     applyMonetPreset(document.documentElement.getAttribute('data-theme') || 'dark');
     return;
@@ -131,17 +129,17 @@ function applyPreset(preset) {
   document.documentElement.setAttribute('data-theme-preset', preset);
   cfgSet('theme_preset', preset);
   document.querySelectorAll('.preset-chip').forEach(chip => {
-    chip.selected = chip.dataset.preset === preset;
+    (chip as any).selected = (chip as HTMLElement).dataset.preset === preset;
   });
   const resolved = document.documentElement.getAttribute('data-theme-resolved') === 'dark';
   generateScheme(seed, resolved);
 }
 
-function generateScheme(seed, isDark) {
+function generateScheme(seed: string | null | undefined, isDark: boolean) {
   if (!seed) return;
   const argb = parseInt(seed.slice(1), 16) | 0xFF000000;
   const scheme = isDark ? Scheme.dark(argb) : Scheme.light(argb);
-  const props = scheme.toJSON();
+  const props: Record<string, number> = scheme.toJSON();
 
   const core = CorePalette.contentOf(argb);
   const n1 = core.n1;
@@ -168,17 +166,17 @@ function generateScheme(seed, isDark) {
 
 function wireThemeControls() {
   const modeGroup = document.getElementById('theme-mode-group');
-  modeGroup?.addEventListener('segmented-button-set-selection', (e) => {
-    const idx = e.detail.index;
-    const btn = modeGroup.querySelectorAll('md-outlined-segmented-button')[idx];
+  modeGroup?.addEventListener('segmented-button-set-selection', (e: Event) => {
+    const idx = (e as CustomEvent).detail.index;
+    const btn = modeGroup!.querySelectorAll('md-outlined-segmented-button')[idx];
     if (btn) applyMode(btn.getAttribute('value') || 'dark');
   });
 
   document.querySelectorAll('.preset-chip').forEach(chip => {
-    chip.addEventListener('click', async () => applyPreset(chip.dataset.preset));
+    chip.addEventListener('click', async () => applyPreset((chip as HTMLElement).dataset.preset || ''));
   });
 
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e: MediaQueryListEvent) => {
     const mode = document.documentElement.getAttribute('data-theme');
     if (mode === 'auto') {
       const resolved = e.matches ? 'dark' : 'light';

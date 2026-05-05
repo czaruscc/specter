@@ -2,17 +2,23 @@ import { shellEscape } from './utils.js';
 import { getTranslation } from './i18n.js';
 import { exec } from './bridge.js';
 
-export async function openFileBrowser(onSelect) {
-  const t = (key, fallback) => getTranslation(key) || fallback;
+interface FsEntry {
+  name: string;
+  isFolder: boolean;
+  path: string;
+}
+
+export async function openFileBrowser(onSelect: (path: string) => void) {
+  const t = (key: string, fallback: string) => getTranslation(key) || fallback;
   let currentPath = '/sdcard';
-  let entries = [];
-  let selectedFile = null;
+  let entries: FsEntry[] = [];
+  let selectedFile: string | null = null;
   let allFiles = false;
 
   const dialog = document.createElement('md-dialog');
   dialog.style.width = '400px';
 
-  function rowHTML(path, icon, name, isFolder, isSelected) {
+  function rowHTML(path: string, icon: string, name: string, isFolder: boolean, isSelected: boolean): string {
     const bg = isSelected ? ';background:var(--md-sys-color-primary-container)' : '';
     return `<div class="fb-row" data-path="${path}" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;cursor:pointer;transition:background 0.15s${bg}" onmouseenter="this.style.background='var(--md-sys-color-surface-container-high)'" onmouseleave="this.style.background='${isSelected ? 'var(--md-sys-color-primary-container)' : 'transparent'}'">
       <span style="width:32px;height:32px;border-radius:8px;background:${isFolder ? 'var(--md-sys-color-primary-container)' : 'var(--md-sys-color-secondary-container)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -46,14 +52,16 @@ export async function openFileBrowser(onSelect) {
     `;
 
     dialog.querySelector('#fb-back')?.addEventListener('click', () => {
-      currentPath = currentPath.substring(0, currentPath.lastIndexOf('/')) || '/';
+      const parent = currentPath.substring(0, currentPath.lastIndexOf('/')) || '/';
+      currentPath = parent === '/' || parent.startsWith('/sdcard') ? parent : '/sdcard';
       loadDir(currentPath);
     });
-    dialog.querySelector('#fb-show-all')?.addEventListener('click', () => { allFiles = true; render(); });
+    document.getElementById('fb-show-all')?.addEventListener('click', () => { allFiles = true; render(); });
 
     dialog.querySelectorAll('.fb-row').forEach(el => {
       el.addEventListener('click', async () => {
-        const path = el.dataset.path;
+        const path = (el as HTMLElement).dataset.path;
+        if (!path) return;
         if (path === '..') {
           currentPath = currentPath.substring(0, currentPath.lastIndexOf('/')) || '/';
           await loadDir(currentPath);
@@ -61,8 +69,8 @@ export async function openFileBrowser(onSelect) {
         }
         const entry = entries.find(e => e.path === path);
         if (entry?.isFolder) {
-          currentPath = path;
-          await loadDir(path);
+          currentPath = path.startsWith('/sdcard') ? path : '/sdcard';
+          await loadDir(currentPath);
         } else {
           selectedFile = path;
           render();
@@ -82,7 +90,7 @@ export async function openFileBrowser(onSelect) {
     }
   }
 
-  async function loadDir(path) {
+  async function loadDir(path: string) {
     dialog.innerHTML = `
       <div slot="headline" style="padding:16px 20px 0;font-size:0.9375rem;font-weight:500">
         <span style="font-size:0.8125rem;color:var(--md-sys-color-on-surface-variant)">${path}</span>
@@ -97,12 +105,13 @@ export async function openFileBrowser(onSelect) {
       dialog.show();
     }
     try {
-      const { stdout } = await exec(`ls -1p ${shellEscape(path)} 2>/dev/null | head -200`);
-      entries = (stdout || '').split('\n').filter(Boolean).map(line => ({
+      const result = await exec(`ls -1p ${shellEscape(path)} 2>/dev/null | head -200`);
+      const stdout = (result as any).stdout || '';
+      entries = stdout.split('\n').filter(Boolean).map((line: string) => ({
         name: line.replace(/\/$/, ''),
         isFolder: line.endsWith('/') && line !== '../',
         path: path + '/' + line.replace(/\/$/, '')
-      })).filter(e => e.name !== '.' && e.name !== '..');
+      })).filter((e: FsEntry) => e.name !== '.' && e.name !== '..');
       selectedFile = null;
       allFiles = false;
       render();

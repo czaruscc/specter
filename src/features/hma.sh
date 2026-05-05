@@ -6,7 +6,7 @@ MODDIR=${0%/*}
 
 log "HMA" "Start"
 
-_installed_pkgs=$(pm list packages 2>/dev/null)
+_installed_pkgs=$(pm list packages 2>/dev/null) || log "HMA" "Warning: Failed to list installed packages"
 
 _injected=false
 
@@ -41,6 +41,7 @@ if check_network; then
     chown "$_uid:$_uid" "$_target_file" 2>/dev/null
     _injected=true
   fi
+  [ "$_injected" != "true" ] && log "HMA" "Download failed, using built-in template"
 fi
 
 if [ "$_injected" != "true" ]; then
@@ -52,6 +53,7 @@ TEMPLATE
   chmod 600 "$_target_file" 2>/dev/null
   _uid=$(stat -c "%u" "$_target_dir" 2>/dev/null) || _uid=0
   chown "$_uid:$_uid" "$_target_file" 2>/dev/null
+  log "HMA" "Built-in template written"
 fi
 
 unset _installed_pkgs _target_dir _target_file _found _injected _uid _downloaded
