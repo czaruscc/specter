@@ -1,5 +1,11 @@
 # Specter
-![Banner](./doc/banner.webp)
+
+<p align="center">
+  <img src="./screenshots/home.png" width="22%" alt="Home">
+  <img src="./screenshots/actions.png" width="22%" alt="Actions">
+  <img src="./screenshots/advanced.png" width="22%" alt="Advanced">
+  <img src="./screenshots/settings.png" width="22%" alt="Settings">
+</p>
 
 [![latest release](https://img.shields.io/github/v/release/dpejoh/specter?label=Release&logo=github)](https://github.com/dpejoh/specter/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/dpejoh/specter/build-test.yml?label=Build&logo=github)](https://github.com/dpejoh/specter/actions)
@@ -23,15 +29,20 @@ Specter is a fork of Yurikey, a project I originally authored. After transferrin
 
 ## Features
 
-- **Keybox management** - download, install, backup, and verify keybox status against Google's official attestation endpoint
+- **Keybox management** - multi-source catalog, custom keybox (file/URL/path), Google revocation checking, private keybox support, backup and restore
+- **Blacklist** - exclude detector apps from target.txt generation with editable defaults
+- **SmartMerge** - per-app targeting control with suffixes (! force, ? conditional, #disable)
+- **Security spoofing** - security patch date, verified boot hash, property hardening, delayed re-application (120s), CROM spoof detection
 - **Target generation** - dynamic target.txt with fixed + installed app entries
-- **Security spoofing** - security patch date, verified boot hash, property resets
 - **PIF integration** - automatic fingerprint updates for INJECT and Fork variants
 - **Zygisk Next** - enforce-denylist, memory-type, and linker configuration
 - **Widevine L1** - attestation key installation for Qualcomm devices
-- **Detection cleanup** - removes traces from common detector apps
+- **Detection cleanup** - removes traces from common detector apps, DroidGuard process killer
 - **RKA** - Remote Key Attestation provisioning for PassIt
-- **WebUI** - Material 3 interface for all module controls
+- **Boot behavior** - auto-hide recovery folders (TWRP, OrangeFox, etc.) at boot
+- **WebUI** - Material 3 TypeScript interface with animated nav, terminal output, developer mode
+- **i18n** - 5 languages (en, zh, ru, es, ar)
+- **Multi-root** - Magisk / KernelSU / APatch with runtime detection
 
 ## Requirements
 
@@ -58,4 +69,4 @@ npx tsc --noEmit
 
 ## License
 
-MIT
+GNU GPL v3.0
