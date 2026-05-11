@@ -6,7 +6,7 @@ MODDIR="$MODPATH"
 . "$MODPATH/lib/config_env.sh"
 
 _vol() {
-    _vt="${1:-8}" _vw=0
+    _vt="${1:-5}" _vw=0
     while [ $_vw -lt $_vt ]; do
         _vk=$(timeout 1 getevent -qlc 1 2>/dev/null)
         if [ -n "$_vk" ]; then
@@ -130,7 +130,7 @@ mkdir -p "$MODPATH/webroot/json"
 RUNTIME_DIR=$(printf '%s' "$MODPATH" | sed 's|/modules_update/|/modules/|')
 
 # Interactive conflict resolution for each detected module
-for _cm_mod in "zygisk_nohello|NoHello" "tsupport-advance|TSupport-Advance" "vbmeta-fixer|VBMeta-Fixer" "treat_wheel|TreatWheel"; do
+for _cm_mod in "zygisk_nohello|NoHello" "tsupport-advance|TSupport-Advance" "treat_wheel|TreatWheel" "sensitive_props|Sensitive Props" "Yurikey|Yurikey Manager"; do
   _cm_id="${_cm_mod%|*}"
   _cm_name="${_cm_mod#*|}"
   [ -d "/data/adb/modules/$_cm_id" ] || continue
@@ -154,6 +154,26 @@ for _cm_mod in "zygisk_nohello|NoHello" "tsupport-advance|TSupport-Advance" "vbm
   # Drain leftover key-up events before next module prompt
   sleep 0.3 2>/dev/null || usleep 300000 2>/dev/null || true
 done
+# Integrity Box special case — uses playintegrityfix module ID, distinguish by Box-Brain marker
+if [ -d "/data/adb/modules/playintegrityfix" ] && [ -d "/data/adb/Box-Brain" ]; then
+  ui_print ""
+  ui_print " Integrity Box detected!"
+  ui_print "  Vol Up   = Priority → Specter"
+  ui_print "  Vol Down = Priority → Integrity Box (default in 8s)"
+  ui_print "  (Integrity Box conflicts with Specter — remove one if issues persist)"
+  _vol; _ib_choice=$?
+  case $_ib_choice in
+    1) cfg_set "conflict_integritybox" "priority_module"
+       ui_print "  → Integrity Box takes priority over Specter" ;;
+    *) cfg_set "conflict_integritybox" "priority_specter"
+       ui_print "  → Specter takes priority over Integrity Box"
+       [ $_ib_choice -eq 2 ] && ui_print "  (Timeout — defaulted)"
+       ui_print "  (Remove Integrity Box if issues persist)" ;;
+  esac
+  unset _ib_choice
+  sleep 0.3 2>/dev/null || usleep 300000 2>/dev/null || true
+fi
+
 unset _cm_mod _cm_id _cm_name
 
 return 0

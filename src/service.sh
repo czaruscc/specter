@@ -20,22 +20,6 @@ if [ "$(toybox cat /sys/fs/selinux/enforce 2>/dev/null)" = "0" ]; then
   chmod 440 /sys/fs/selinux/policy 2>/dev/null || true
 fi
 
-# --- Vbmeta fixer — read real size/digest from block device ---
-if _feature_enabled toggle_boot_hash; then
-  _vbmeta_out=$(read_vbmeta 2>/dev/null || echo "")
-  if [ -n "$_vbmeta_out" ]; then
-    _vbsize="${_vbmeta_out%% *}"
-    _vbhash="${_vbmeta_out#* }"
-    resetprop -n ro.boot.vbmeta.size "$_vbsize" 2>/dev/null || true
-    sp_try ro.boot.vbmeta.hash_alg sha256
-    sp_try ro.boot.vbmeta.avb_version 2.0
-    if [ -n "$_vbhash" ]; then
-      resetprop -n ro.boot.vbmeta.digest "$_vbhash" 2>/dev/null || true
-    fi
-  fi
-  unset _vbmeta_out _vbsize _vbhash
-fi
-
 log "SERVICE" "Boot properties set"
 
 # After boot completed
@@ -53,7 +37,15 @@ done
 log "SERVICE" "Boot completed - applying hardening"
 
 # Apply boot hardening (settings + prop deletes)
-_feature_enabled toggle_boot_hardening && apply_boot_hardening
+_feature_enabled toggle_boot_hardening && {
+  apply_boot_hardening
+  # Harden sensitive proc files
+  chmod 440 /proc/cmdline 2>/dev/null || true
+  chmod 440 /proc/net/unix 2>/dev/null || true
+  find /vendor/bin /system/bin -name install-recovery.sh -exec chmod 440 {} + 2>/dev/null || true
+  chmod 750 /system/addon.d 2>/dev/null || true
+}
+_feature_enabled toggle_dev_options && disable_dev_options
 log "SERVICE" "Boot hardening applied"
 
 
@@ -83,6 +75,14 @@ log "SERVICE" "Boot-time features done"
   sp_try ro.crypto.state encrypted
   sp_try ro.build.tags release-keys
   hide_recovery_folders
+) &
+
+# Periodic suspicious props cleaning - re-run every hour
+_feature_enabled toggle_suspicious_props && (
+  while true; do
+    sleep 3600
+    sh "$MODDIR/features/suspicious_props.sh" >/dev/null 2>&1 || true
+  done
 ) &
 
 log "SERVICE" "Done"

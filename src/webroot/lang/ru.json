@@ -130,6 +130,9 @@
   "control_toggle_recovery_desc": "Скрывать папки TWRP, OrangeFox, FOX из /sdcard при загрузке",
   "control_toggle_boot_hardening": "Усиление загрузки",
   "control_toggle_boot_hardening_desc": "Применить усиление свойств безопасности (ro.secure, ro.debuggable и т.д.) при загрузке",
+
+  "control_toggle_dev_options": "Отключить параметры разработчика",
+  "control_toggle_dev_options_desc": "Отключить меню параметров разработчика и persist.sys.developer_options при загрузке",
   "control_toggle_bootloader_spoofer": "Блокировка спуфера загрузчика",
   "control_toggle_bootloader_spoofer_desc": "Удалять конфликтующие пакеты спуфера загрузчика при загрузке",
   "control_toggle_rom_spoof": "Блокировать ROM спуферы",

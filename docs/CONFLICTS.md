@@ -22,10 +22,12 @@ At every boot, `service.sh` calls `resolve_conflicts()` which:
 
 | Module | ID | Detection | Default | Toggle OFF (Specter) | Toggle ON (Module) |
 |---|---|---|---|---|---|
-| NoHello | `nohello` | `/data/adb/modules/nohello` | OFF — block service.sh | Rename service.sh → .bak (Zygisk stays) | Specter skips boot prop hardening, vbmeta, security patch, suspicious props, LSPosed clean, ROM spoof block |
+| NoHello | `nohello` | `/data/adb/modules/nohello` | OFF — block service.sh | Rename service.sh → .bak (Zygisk stays) | Specter skips boot prop hardening, security patch, suspicious props, LSPosed clean, ROM spoof block |
 | TSupport-Advance | `tsupport-advance` | `/data/adb/modules/tsupport-advance` | OFF — block both boot scripts | Rename post-fs-data.sh + service.sh → .bak | Specter skips all overlapping features (prop hardening, ROM spoof block, target gen, LSPosed clean, etc.) |
-| VBMeta-Fixer | `vbmeta-fixer` | `/data/adb/modules/vbmeta-fixer` | OFF — block service.sh | Rename service.sh → .bak | Specter skips vbmeta fix + boot_hash.sh |
 | TreatWheel | `treat_wheel` | `/data/adb/modules/treat_wheel` | OFF — block service.sh | Rename service.sh → .bak (Zygisk stays) | Specter skips boot prop hardening, ROM spoof block, suspicious props |
+| Sensitive Props | `sensitive_props` | `/data/adb/modules/sensitive_props` | OFF — block service.sh | Rename service.sh → .bak | Specter skips boot prop hardening, suspicious props, ROM spoof block |
+| Yurikey Manager | `Yurikey` | `/data/adb/modules/Yurikey` | OFF — block service.sh | Rename service.sh → .bak | Specter skips boot prop hardening, security patch, suspicious props, ROM spoof block |
+| Integrity Box | `integritybox` | `/data/adb/modules/playintegrityfix` + `/data/adb/Box-Brain` | OFF — block service.sh | Rename service.sh → .bak | Specter skips all overlapping features (prop hardening, security patch, suspicious props, ROM spoof, bootloader spoofer, target gen) |
 
 ## Always Blocked — No Toggle
 
@@ -40,8 +42,6 @@ At every boot, `service.sh` calls `resolve_conflicts()` which:
 | Play Integrity Fix | Essential, complementary features (Zygisk injection, auto fingerprint) |
 | TrickyStore | Attestation certificate manipulation — different layer from prop spoofing |
 | TEESimulator | TrickyStore fork — already integrated via locked.xml format |
-| HyperCeiler | No prop overlap, persist props cleaned by suspicious_props.sh |
-| LuckyTool | Same as above |
 
 ## Backup and Restore
 

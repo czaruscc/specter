@@ -12,6 +12,7 @@ detect_root_solution
 log "BOOT" "Boot completed - finalizing"
 
 _feature_enabled toggle_boot_hardening && apply_boot_hardening
+_feature_enabled toggle_dev_options && disable_dev_options
 
 log "BOOT" "Running boot-time features..."
 

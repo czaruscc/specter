@@ -731,6 +731,7 @@ function wireControlToggles() {
   const toggles: Array<{ id: string; key: string; default?: string }> = [
     { id: 'toggle-recovery', key: 'toggle_recovery' },
     { id: 'toggle-boot_hardening', key: 'toggle_boot_hardening' },
+    { id: 'toggle-dev_options', key: 'toggle_dev_options' },
     { id: 'toggle-bootloader_spoofer', key: 'toggle_bootloader_spoofer' },
     { id: 'toggle-rom_spoof', key: 'toggle_rom_spoof' },
     { id: 'toggle-lsposed', key: 'toggle_lsposed' },
@@ -756,6 +757,7 @@ async function refreshControlToggles() {
   const toggles: Array<{ id: string; key: string; default?: string }> = [
     { id: 'toggle-recovery', key: 'toggle_recovery' },
     { id: 'toggle-boot_hardening', key: 'toggle_boot_hardening' },
+    { id: 'toggle-dev_options', key: 'toggle_dev_options' },
     { id: 'toggle-bootloader_spoofer', key: 'toggle_bootloader_spoofer' },
     { id: 'toggle-rom_spoof', key: 'toggle_rom_spoof' },
     { id: 'toggle-lsposed', key: 'toggle_lsposed' },

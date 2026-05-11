@@ -147,6 +147,9 @@
   "control_toggle_recovery_desc": "Hide TWRP, OrangeFox, FOX recovery folders from /sdcard at boot",
   "control_toggle_boot_hardening": "Boot Hardening",
   "control_toggle_boot_hardening_desc": "Apply security prop hardening (ro.secure, ro.debuggable, etc.) at boot",
+
+  "control_toggle_dev_options": "Disable Developer Options",
+  "control_toggle_dev_options_desc": "Disable Developer Options menu and persist.sys.developer_options at boot",
   "control_toggle_bootloader_spoofer": "Bootloader Spoofer Block",
   "control_toggle_bootloader_spoofer_desc": "Remove conflicting bootloader spoofer packages at boot",
   "control_toggle_rom_spoof": "Block ROM Spoof Engines",

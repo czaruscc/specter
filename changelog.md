@@ -1,40 +1,54 @@
 # Specter Changelog
 
-## v1.2.1
+## v1.3.0
+
+### VBMeta / Boot Hash — Complete Overhaul
+
+- **Removed `read_vbmeta()`** (`common.sh`) — was computing SHA-256 of the raw vbmeta partition. The VBMeta Digest is a different value (digest over parsed VBMeta structs, set by the bootloader). Raw partition hashing is incorrect and produced wrong results on every device.
+- **Removed inline vbmeta fixer** (`service.sh`) — the early-boot block-device read that set `ro.boot.vbmeta.size` / `hash_alg` / `avb_version` / `digest` from raw partition data. Removed entirely.
+- **Rewrote `boot_hash.sh`** — new fallback chain: existing system property → `/proc/cmdline` → user config `/sdcard/Specter/boot_hash` → stored file `/data/adb/boot_hash` → skip. No block device read, no `sha256sum`/`blockdev` dependency, no zero fallback.
+- **Removed zero fallback** — no longer writes `0000...0000` to `ro.boot.vbmeta.digest` or `/data/adb/boot_hash`. If no valid source, the script exits without touching anything.
+- **Zero-value guard added** — user config and stored file inputs that are all zeros are now rejected.
+- **Boot hash priority reordered** (`boot_hash.sh`): `read_vbmeta()` (block device) now runs before the cached file. Previously, a transient failure on first boot would write zeros to the cache, permanently blocking re-read. Now: user override → block device → cached fallback.
+- **`service.sh` guard removed**: the `[ ! -f "/data/adb/boot_hash" ]` guard that skipped setting `ro.boot.vbmeta.digest` from the live block device when cache existed was removed.
+- **`boot_hash.sh` reads `/proc/cmdline`** — new source: the bootloader's `androidboot.vbmeta.digest=` survives module interference and restores the original value even if previously corrupted.
 
 ### download() / Network
 - Swapped priority: **wget first, curl fallback** — wget ships with Android (toybox), curl does not. Reduces unnecessary errors and timeouts on devices without curl.
 - `check_network()` also updated to try wget first for consistency.
 
 ### Keybox Script Fixes
-- **Unguarded curl in fallback probe** (`keybox.sh:76`): added `command -v` guard + `2>/dev/null` to both curl and wget calls. Previously, `2>/dev/null` only covered wget and curl had no existence check — shell would print `curl: inaccessible or not found` on devices without curl.
-- **`sort -R` removed** (`keybox.sh:81`): `sort -R` is a GNU extension, not available on busybox/toybox Android builds. Replaced with POSIX-compatible `awk` random selection.
-- **Custom keybox detection** (`app.ts:552`): hardcoded curl in the shell command string replaced with wget-first fallback — same priority pattern as `download()`.
+- **Unguarded curl in fallback probe** (`keybox.sh`): added `command -v` guard + `2>/dev/null` to both curl and wget calls.
+- **`sort -R` removed** (`keybox.sh`): `sort -R` is a GNU extension, not available on busybox/toybox Android builds. Replaced with POSIX-compatible `awk` random selection.
+- **Custom keybox detection** (`app.ts`): added wget-first fallback in the shell command string — same priority pattern as `download()`.
 
 ### Play Store Clear Data
-- **`kill_play_store.sh`** and **`gms.sh`**: replaced `cmd package trim-caches 999999999 com.android.vending` with `pm clear com.android.vending`.
-- `trim-caches` only accepts a size argument (ignores package name) and only clears system cache files — never touches app data. `pm clear` actually deletes the app's private data, forcing Play Store to re-register the device after a keybox swap.
+- **`kill_play_store.sh`** and **`gms.sh`**: replaced `cmd package trim-caches 999999999 com.android.vending` with `pm clear com.android.vending`. `trim-caches` only accepts a size argument and only clears system cache — never app data. `pm clear` actually deletes private data, forcing Play Store re-registration after a keybox swap.
 
 ### Installer (customize.sh)
-- **Timeout on all vol-key prompts**: each prompt now defaults after 8 seconds of no input — skip keybox install, skip target.txt generation, default to Specter priority for module conflicts. Uses `timeout` (toybox) to poll `getevent` at 1-second intervals.
+- **Timeout on all vol-key prompts**: each prompt defaults after 8 seconds of no input — skip keybox install, skip target.txt generation, default to Specter priority for module conflicts. Uses `timeout` (toybox) to poll `getevent` at 1-second intervals.
 - **Download timeout guard**: keybox download wrapped in background + kill loop with 30-second hard cap — prevents endless waits if network hangs.
 - **Target.txt prompt**: new prompt after keybox installation — asks whether to run `target.sh` immediately.
+- **Removed VBMeta-Fixer from conflict prompt** — the module isn't in the conflict registry, so the installer shouldn't offer a choice for it.
 
-### Boot Hash Fix
-- **Priority reordered** (`boot_hash.sh`): `read_vbmeta()` (real block device) now runs before checking the cached `/data/adb/boot_hash` file. Previously, a transient `read_vbmeta()` failure on first boot would write `0000...0000` to the cache, and the cached file permanently blocked re-reading the real partition on subsequent boots. Now: user override → block device → cached fallback → zeros.
-- **`service.sh` guard removed**: the `[ ! -f "/data/adb/boot_hash" ]` guard that skipped setting `ro.boot.vbmeta.digest` from the live block device when cache existed was removed. The digest is always set from the real partition during early boot.
-- **`boot-completed.sh`**: added `_feature_enabled toggle_boot_hardening`, `toggle_boot_hash`, `toggle_security_patch`, `toggle_suspicious_props`, `toggle_rom_spoof` gates — previously ran all boot-time features unconditionally on KSU/APatch, ignoring conflict resolution.
+### Conflict Registry — New Additions
+- **Sensitive Props** (`sensitive_props`): added with features `boot_hardening`, `suspicious_props`, `rom_spoof`. Detected by `/data/adb/modules/sensitive_props/`.
+- **Yurikey Manager** (`Yurikey`): added with features `boot_hardening`, `security_patch`, `suspicious_props`, `rom_spoof`. Detected by `/data/adb/modules/Yurikey/`.
+- **Integrity Box** (`integritybox`): added with features `boot_hardening`, `security_patch`, `suspicious_props`, `rom_spoof`, `bootloader_spoofer`, `target`. Detected by `/data/adb/modules/playintegrityfix/` + `/data/adb/Box-Brain/` marker to distinguish from actual PIF.
 
 ### Conflict Resolution
-- **`apply_conflict_toggles()` now writes both `toggle_*` AND `toggle_action_*`** — previously only wrote `toggle_*`, so the action pipeline (`action.sh`) bypassed conflict resolution entirely. Now when a conflicting module claims a feature, both the boot-time and pipeline toggles are set to 0.
-- **NoHello registry narrowed**: `zygisk_nohello` claims reduced from 7 features to just `boot_hardening` — NoHello only sets boot props; the other 6 phantom claims (`boot_hash`, `security_patch`, `suspicious_props`, `lsposed`, `rom_spoof`, `bootloader_spoofer`) were incorrect and caused Specter features to go missing when NoHello was prioritized.
+- **`apply_conflict_toggles()` now writes both `toggle_*` AND `toggle_action_*`** — previously only wrote `toggle_*`, so the action pipeline bypassed conflict resolution entirely. Now when a conflicting module claims a feature, both boot-time and pipeline toggles are set to 0.
+- **NoHello registry narrowed**: `zygisk_nohello` claims reduced from 7 features to just `boot_hardening` — NoHello only sets boot props; the other 6 phantom claims were incorrect and caused Specter features to go missing when NoHello was prioritized.
 - **`refreshControlToggles()`**: added missing `toggle-recovery` entry — the recovery toggle was not synced after a conflict change.
+- **Removed VBMeta-Fixer from conflict registry** — no overlapping features.
+- **Removed `boot_hash` from TSupport-Advance conflict entry** — Specter's boot hash feature no longer conflicts with any module.
+- **Removed `boot_hash` from `apply_conflict_toggles()`** iteration — `toggle_boot_hash` is no longer overridden by conflict resolution.
 
 ### Feature Script Self-Guards Removed
 - **`boot_hash.sh`** and **`security_patch.sh`**: removed internal `cfg_get toggle_* = "0" && exit 0` guard. These scripts are called from multiple contexts (service, boot-completed, action pipeline) each with their own toggle gate. The self-guard was redundant and wrong — e.g., `toggle_boot_hash=0` would block the action pipeline even when `toggle_action_boot_hash=1`.
 
 ### PIF Default Off
-- `toggle_action_pif` now defaults to `0` (disabled) — PIF has its own update mechanism and shouldn't run from Specter's pipeline unless the user explicitly enables it in Control → Action Pipeline.
+- `toggle_action_pif` now defaults to `0` (disabled) — PIF has its own update mechanism and shouldn't run from Specter's pipeline unless the user explicitly enables it.
 - WebUI toggle defaults updated accordingly in both `wireControlToggles` and `refreshControlToggles`.
 
 ### Action Pipeline Message
@@ -44,20 +58,39 @@
 - **New `post-fs-data.sh`**: runs `resolve_conflicts()` at the earliest boot stage (`post-fs-data`), before other modules' scripts execute. This ensures conflicting modules are renamed to `.bak` before they can set their own boot props.
 - **`service.sh`**: removed duplicate `resolve_conflicts()` call — now handled by `post-fs-data.sh`.
 
-### Translations
-- **Added 24 missing Control page keys** to all 4 translations (ar, zh, ru, es) — the entire "Boot Behavior", "Action Pipeline", and "Conflict Resolution" sections were previously missing from non-English translations.
-- **Fixed `menu_force_clear_desc`** — updated outdated text across all translations to match the new description (Play Store, Chrome, GMS, GSF, Wallet, DroidGuard).
+### Boot-time Features Gated (boot-completed.sh)
+- Added `_feature_enabled` gates for `toggle_boot_hardening`, `toggle_boot_hash`, `toggle_security_patch`, `toggle_suspicious_props`, `toggle_rom_spoof` on KernelSU/APatch — previously ran all features unconditionally, ignoring conflict resolution.
+
+### New Features
+
+- **Binary-level prop deletion** (`common.sh`): new `hexpatch_deleteprop()` function — uses `magiskboot hexpatch` to overwrite property values in `/dev/__properties__/` with random hex, making deletion undetectable at the API level. Falls back to `resetprop --delete` if magiskboot is unavailable. Used by `suspicious_props.sh` for stealthier cleaning.
+- **AVB header-based vbmeta.size** (`boot_hash.sh`): parses the real AVB0 header from the vbmeta block device to compute `256 + auth_data + aux_data` sizes — more accurate than `blockdev --getsize64` which gives raw partition size.
+- **`ro.boot.vbmeta.invalidate_on_error=yes`** (`boot_hash.sh`): now set alongside the digest for more complete vbmeta prop coverage.
+- **Periodic suspicious props re-cleaning** (`service.sh`): re-runs `suspicious_props.sh` every hour in the background — catches properties that get re-set after boot.
+- **File permission hardening** (`service.sh`): `/proc/cmdline` → 440, `/proc/net/unix` → 440, `install-recovery.sh` → 440, `/system/addon.d` → 750. Gated behind `toggle_boot_hardening`.
+
+### Bug Fixes
+- **Custom keybox URL: raw file no longer copied on decode failure** (`keybox.sh`) — if the downloaded custom keybox isn't valid base64, the script now restores the backup and exits with an error instead of writing garbage to `keybox.xml`.
+- **`set -e` safety** (`cleanup.sh`, `common.sh`): added `2>/dev/null || true` guards to `resetprop` calls in `cleanup.sh:105-106` and `disable_rom_spoof_engines():370`. Added `|| true` to `apply_boot_hardening` call in `cleanup.sh:110`. Prevents mid-script abort if these commands fail.
+- **Removed dead code** (`common.sh`): `resolve_module_root()` — never called, logic already inlined in `device-info.sh`.
+- **Persisted props not restored on uninstall** (`uninstall.sh`) — `sp_persist()` writes `restore|prop|val` format but uninstall checked for `^resetprop -n -p`. Now parses the actual format with `IFS='|'` and emits `resetprop -n -p` for each entry.
+- **`apply_prop_hardening()` wiped `ro.build.fingerprint`** (`common.sh`) — `check_prop "ro.build.fingerprint" ""` set the fingerprint to empty string. Removed.
+- **Zygisk Next version comparison broken by `v` prefix** (`zygisk_next.sh`) — `version_ge "v1.3.0" "1.3.0"` always returned false because awk casts non-numeric to 0. Added `sed 's/^v//'` to strip the prefix.
+- **`apply_prop_hardening()` now consistently returns 0** — prevents `set -e` exits in cleanup.sh.
+
+### i18n / Translations
+- **Added 24 missing Control page keys** to all 4 translations (ar, zh, ru, es) — the entire "Boot Behavior", "Action Pipeline", and "Conflict Resolution" sections were previously missing from non-English.
+- **Fixed `menu_force_clear_desc`** — updated across all translations to match the new description.
 - **Fixed `update_desc`** — was empty in all 4 translations, now translated.
 - **Fixed `advance_fix_detect_pif`** — removed spurious `(1)` suffix from Chinese and Russian.
-- **Translated previously untranslated keys**: `dialog_cancel`, `tools_danger_zone`, `tools_danger_zone_desc`, `danger_confirm_msg` now localized in all languages.
-- **Translated navbar labels**: `nav_tools` and `nav_control` were still raw English — now localized (tools/control in all 4 languages).
-- **Translated color names**: all 9 `theme_preset_*` color names now localized (ar: أزرق/أحمر/أخضر..., zh: 蓝色/红色/绿色..., ru: Синий/Красный/Зелёный..., es: Azul/Rojo/Verde...).
-- **Translated tool page descriptions**: 25 remaining description keys translated across all languages (Scan & Clean, Customize Per-App Targeting, Filter Blacklisted Apps, Set Custom Keybox, and all supporting texts).
-- **Translated `home_security_patch`** — "Security Patch" label now localized in all 4 languages.
-- **Fixed `danger_confirm`** in Arabic — now translated to متابعة.
-- **Added 26 new i18n keys** for previously hardcoded UI text: file browser (empty state, show all), conflict toasts (Module handles it / Specter handles it), "Priority →" prefix, keybox provider dropdown, custom keybox description, toast messages for blacklist/smartmerge/recovery/detection, time labels (Today at / Yesterday at), history buttons (Copy/Copied/Failed), device status labels (TEE Sim, Not Installed, Private Keybox, Latest, Generic).
+- **Translated previously untranslated keys**: `dialog_cancel`, `tools_danger_zone`, `tools_danger_zone_desc`, `danger_confirm_msg`, `nav_tools`, `nav_control`, `home_security_patch`, 9 `theme_preset_*` color names, 25 tool page descriptions, and 20+ toast/device/history keys.
+- **Added 26 new i18n keys**: file browser (empty state, show all), conflict toasts (Module/Specter handles it), priority prefix, toast messages for blacklist/smartmerge/recovery/detection, time labels (Today at / Yesterday at), history buttons (Copy/Copied/Failed), device status labels (TEE Sim, Not Installed, Private Keybox, etc.).
 - **Fixed 5 hardcoded English strings** in code: `index.html` (Auto dropdown), `app.ts` (conflict hint + toast), `file-browser.ts` (empty state + show all).
-- All 4 translations now at 180 keys — fully synced with source, no missing or extra keys, no empty values.
+- All 4 translations now at 180 keys — fully synced with source.
+
+### Other
+- Updated `docs/CONFLICTS.md` — removed VBMeta-Fixer row, updated NoHello and TSupport descriptions.
+- Fixed `README.md` — updated nav reference from Setup to Tools, merged Maintain features into Tools description, added Control page to features list.
 
 ## v1.0.0
 

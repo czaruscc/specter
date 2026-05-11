@@ -130,6 +130,9 @@
   "control_toggle_recovery_desc": "启动时隐藏 /sdcard 中的 TWRP、OrangeFox、FOX 恢复文件夹",
   "control_toggle_boot_hardening": "启动加固",
   "control_toggle_boot_hardening_desc": "启动时应用安全属性加固（ro.secure、ro.debuggable 等）",
+
+  "control_toggle_dev_options": "禁用开发者选项",
+  "control_toggle_dev_options_desc": "启动时禁用开发者选项菜单和 persist.sys.developer_options",
   "control_toggle_bootloader_spoofer": "引导加载程序欺骗拦截",
   "control_toggle_bootloader_spoofer_desc": "启动时移除冲突的引导加载程序欺骗包",
   "control_toggle_rom_spoof": "阻止 ROM 欺骗引擎",

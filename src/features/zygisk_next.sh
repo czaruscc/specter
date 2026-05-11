@@ -26,7 +26,7 @@ if [ ! -x "$SCRIPT_FILE" ]; then
   exit 1
 fi
 
-CURRENT=$(grep "^version=" "$ZYNEXT_PROPFILE" | cut -d'=' -f2 | cut -d' ' -f1)
+CURRENT=$(grep "^version=" "$ZYNEXT_PROPFILE" | cut -d'=' -f2 | cut -d' ' -f1 | sed 's/^v//')
 log "ZYGISK_NEXT" "Detected Zygisk Next version $CURRENT"
 ensure_dir "$(dirname "$SCRIPT_FILE")"
 

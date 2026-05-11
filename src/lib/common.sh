@@ -171,7 +171,6 @@ hide_recovery_folders() {
 }
 
 apply_prop_hardening() {
-    check_prop "ro.build.fingerprint" ""
     check_prop "ro.boot.vbmeta.device_state" "locked"
     check_prop "vendor.boot.vbmeta.device_state" "locked"
     check_prop "ro.boot.verifiedbootstate" "green"
@@ -228,15 +227,18 @@ PROPS
     return 0
 }
 
-apply_boot_hardening() {
+disable_dev_options() {
   settings put global development_settings_enabled 0
+  resetprop -n persist.sys.developer_options 0
+}
+
+apply_boot_hardening() {
   settings put global adb_enabled 0
   settings put global oem_unlock_allowed 0
   settings put global adb_wifi_enabled 0
   settings put global adb_wifi_port -1
   resetprop --delete persist.service.adb.enable 2>/dev/null || true
   resetprop --delete persist.service.debuggable 2>/dev/null || true
-  resetprop -n persist.sys.developer_options 0
 
   if [ "$(toybox cat /sys/fs/selinux/enforce 2>/dev/null)" = "0" ]; then
     chmod 640 /sys/fs/selinux/enforce 2>/dev/null || true
@@ -364,7 +366,7 @@ persist.sys.pixelprops.pi|false
 MAP
 
   if [ -f "$GMS_PROPS_FILE" ] && [ "$(resetprop persist.sys.spoof.gms 2>/dev/null)" != "false" ]; then
-    resetprop persist.sys.spoof.gms false
+    resetprop persist.sys.spoof.gms false 2>/dev/null || true
   fi
 
   while IFS= read -r _prop; do
@@ -384,17 +386,6 @@ decode_keybox_blob() {
   _dkb_in="$1" _dkb_out="$2"
   tr "$SHUFFLED_ALPHABET" "$STD_ALPHABET" < "$_dkb_in" | base64 -d > "$_dkb_out"
   unset _dkb_in _dkb_out
-}
-
-read_vbmeta() {
-  _rv_slot=$(getprop ro.boot.slot_suffix 2>/dev/null || echo "")
-  _rv_dev="/dev/block/by-name/vbmeta${_rv_slot}"
-  [ -b "$_rv_dev" ] || return 1
-  _rv_info=$(dd if="$_rv_dev" bs=1M 2>/dev/null | sha256sum 2>/dev/null) || return 1
-  _rv_digest="${_rv_info%% *}"
-  _rv_size=$(blockdev --getsize64 "$_rv_dev" 2>/dev/null) || return 1
-  echo "$_rv_size $_rv_digest"
-  unset _rv_slot _rv_dev _rv_info _rv_digest _rv_size
 }
 
 run_device_info() {
@@ -475,16 +466,6 @@ find_kmInstallKeybox() {
   unset _fk_abi _fk_lib_dir _fk_bin _fk_dir
 }
 
-resolve_module_root() {
-  MODDIR="${0%/*}"
-  if echo "$MODDIR" | grep -q "webroot/common"; then
-    MODULE_ROOT="${MODDIR%/webroot/common}"
-  else
-    MODULE_ROOT="$MODDIR"
-  fi
-  echo "$MODULE_ROOT"
-}
-
 block_rom_spoof_engines() {
   _brs_gate=false
   resetprop 2>/dev/null | grep -qE 'persist\.sys\.(pihooks|entryhooks|pixelprops)' && _brs_gate=true
@@ -544,15 +525,24 @@ CONFLICT_BACKUP_FILE="/data/adb/Specter/conflict_backups.txt"
 _conflict_registry() {
   cat <<'EOF'
 zygisk_nohello|NoHello|/data/adb/modules/zygisk_nohello/service.sh|boot_hardening
-tsupport-advance|TSupport-Advance|/data/adb/modules/tsupport-advance/post-fs-data.sh,/data/adb/modules/tsupport-advance/service.sh|boot_hardening,boot_hash,security_patch,suspicious_props,lsposed,rom_spoof,bootloader_spoofer,target
-vbmeta-fixer|VBMeta-Fixer|/data/adb/modules/vbmeta-fixer/service.sh|boot_hash
+tsupport-advance|TSupport-Advance|/data/adb/modules/tsupport-advance/post-fs-data.sh,/data/adb/modules/tsupport-advance/service.sh|boot_hardening,security_patch,suspicious_props,lsposed,rom_spoof,bootloader_spoofer,target
 treat_wheel|TreatWheel|/data/adb/modules/treat_wheel/service.sh,/data/adb/modules/treat_wheel/service-or-boot-completed.sh|boot_hardening,rom_spoof,suspicious_props
+sensitive_props|Sensitive Props|/data/adb/modules/sensitive_props/service.sh|boot_hardening,suspicious_props,rom_spoof
+Yurikey|Yurikey Manager|/data/adb/modules/Yurikey/service.sh|boot_hardening,security_patch,suspicious_props,rom_spoof
+integritybox|Integrity Box|/data/adb/modules/playintegrityfix/service.sh|boot_hardening,security_patch,suspicious_props,rom_spoof,bootloader_spoofer,target
 EOF
 }
 
 _conflict_detect() {
   _cd_modid="$1"
-  [ -d "/data/adb/modules/$_cd_modid" ] || [ -d "/data/adb/modules_update/$_cd_modid" ]
+  case "$_cd_modid" in
+    integritybox)
+      [ -d "/data/adb/modules/playintegrityfix" ] && [ -d "/data/adb/Box-Brain" ]
+      ;;
+    *)
+      [ -d "/data/adb/modules/$_cd_modid" ] || [ -d "/data/adb/modules_update/$_cd_modid" ]
+      ;;
+  esac
 }
 
 _conflict_choice() {
@@ -657,7 +647,7 @@ EOF
 # Recalculate all Specter toggles based on current conflict priorities
 # Called by WebUI after changing a single module's priority
 apply_conflict_toggles() {
-  for _ac_feature in boot_hardening boot_hash security_patch suspicious_props lsposed rom_spoof bootloader_spoofer target; do
+  for _ac_feature in boot_hardening security_patch suspicious_props lsposed rom_spoof bootloader_spoofer target; do
     if _conflict_claimed "$_ac_feature"; then
       cfg_set "toggle_$_ac_feature" 0
       cfg_set "toggle_action_$_ac_feature" 0
@@ -714,4 +704,24 @@ $(_conflict_registry)
 EOF
   unset _csc_key _csc_choice _csc_id _csc_name _csc_scripts _csc_features
   return $_csc_found
+}
+
+hexpatch_deleteprop() {
+  _hd_prop="$1"
+  [ -n "$_hd_prop" ] || return 0
+  _hd_magiskboot=$(command -v magiskboot 2>/dev/null || find /data/adb /data/data/me.bmax.apatch/patch/ -name magiskboot -print -quit 2>/dev/null)
+  if [ -n "$_hd_magiskboot" ]; then
+    _hd_file=$(resetprop -Z "$_hd_prop" 2>/dev/null | cut -d' ' -f2 | cut -d':' -f3)
+    [ -z "$_hd_file" ] && { resetprop -p --delete "$_hd_prop" 2>/dev/null || true; return 0; }
+    _hd_path=$(find /dev/__properties__/ -name "*$_hd_file*" -print -quit 2>/dev/null)
+    [ -z "$_hd_path" ] && { resetprop -p --delete "$_hd_prop" 2>/dev/null || true; return 0; }
+    _hd_search_hex=$(printf '%s' "$_hd_prop" | od -A n -t x1 | tr -d ' \n' | tr '[:lower:]' '[:upper:]')
+    _hd_search_len=$(printf '%s' "$_hd_prop" | wc -c)
+    _hd_replacement=$(head /dev/urandom 2>/dev/null | tr -dc '0-9a-f' | head -c "$_hd_search_len" 2>/dev/null || printf '%s' "$_hd_prop" | od -A n -t x1 | tr -d ' \n' | head -c "$((_hd_search_len * 2))")
+    _hd_replacement_hex=$(printf '%s' "$_hd_replacement" | od -A n -t x1 | tr -d ' \n' | tr '[:lower:]' '[:upper:]')
+    "$_hd_magiskboot" hexpatch "$_hd_path" "$_hd_search_hex" "$_hd_replacement_hex" >/dev/null 2>&1 || resetprop -p --delete "$_hd_prop" 2>/dev/null || true
+  else
+    resetprop -p --delete "$_hd_prop" 2>/dev/null || true
+  fi
+  unset _hd_prop _hd_magiskboot _hd_file _hd_path _hd_search_hex _hd_search_len _hd_replacement _hd_replacement_hex
 }

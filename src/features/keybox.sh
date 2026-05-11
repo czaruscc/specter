@@ -53,12 +53,14 @@ if [ -n "$_custom_type" ] && [ -n "$_custom_value" ]; then
       }
       if decode_keybox_blob "$TEMP_FILE" "$DECODE_FILE" 2>/dev/null && [ -s "$DECODE_FILE" ]; then
         mv "$DECODE_FILE" "$TARGET_FILE" || die "Failed to move decoded keybox"
-      else
-        cp "$TEMP_FILE" "$TARGET_FILE" || die "Failed to copy keybox"
+        log "KEYBOX" "Custom keybox installed from URL"
+        _clear_custom
+        exit 0
       fi
-      log "KEYBOX" "Custom keybox installed from URL"
+      log "KEYBOX" "Error: Custom keybox decode failed — not a valid base64 blob"
       _clear_custom
-      exit 0
+      [ -f "$BACKUP_FILE" ] && cp "$BACKUP_FILE" "$TARGET_FILE"
+      exit 1
       ;;
   esac
 fi

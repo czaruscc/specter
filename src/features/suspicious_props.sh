@@ -26,7 +26,7 @@ for _entry in $SUSPICIOUS_PROPS; do
       warning)  echo "[WARNING] $_prop = $_value" ;;
       *)        echo "[INFO] $_prop = $_value" ;;
     esac
-    resetprop -p --delete "$_prop" 2>/dev/null || true
+    hexpatch_deleteprop "$_prop"
   fi
 done
 IFS="$_old_ifs"; unset _old_ifs

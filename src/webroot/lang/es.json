@@ -130,6 +130,9 @@
   "control_toggle_recovery_desc": "Ocultar las carpetas TWRP, OrangeFox, FOX de /sdcard al arrancar",
   "control_toggle_boot_hardening": "Refuerzo de arranque",
   "control_toggle_boot_hardening_desc": "Aplicar refuerzo de propiedades de seguridad (ro.secure, ro.debuggable, etc.) al arrancar",
+
+  "control_toggle_dev_options": "Desactivar Opciones de Desarrollador",
+  "control_toggle_dev_options_desc": "Desactivar el menú de Opciones de Desarrollador y persist.sys.developer_options al arrancar",
   "control_toggle_bootloader_spoofer": "Bloqueo de Bootloader Spoofer",
   "control_toggle_bootloader_spoofer_desc": "Eliminar paquetes conflictivos de bootloader spoofer al arrancar",
   "control_toggle_rom_spoof": "Bloquear motores de spoofing ROM",

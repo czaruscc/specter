@@ -130,6 +130,9 @@
   "control_toggle_recovery_desc": "إخفاء مجلدات TWRP وOrangeFox وFOX من /sdcard عند التمهيد",
   "control_toggle_boot_hardening": "تعزيز التمهيد",
   "control_toggle_boot_hardening_desc": "تطبيق تعزيز خصائص الأمان (ro.secure، ro.debuggable، إلخ) عند التمهيد",
+
+  "control_toggle_dev_options": "تعطيل خيارات المطور",
+  "control_toggle_dev_options_desc": "تعطيل قائمة خيارات المطور و persist.sys.developer_options عند التمهيد",
   "control_toggle_bootloader_spoofer": "حظر مخادع بوت لودر",
   "control_toggle_bootloader_spoofer_desc": "إزالة حزم مخادع بوت لودر المتعارضة عند التمهيد",
   "control_toggle_rom_spoof": "حظر محركات تزييف ROM",

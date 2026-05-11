@@ -102,12 +102,12 @@ log "CLEANUP" "Applying prop hardening..."
 apply_prop_hardening || true
 log "CLEANUP" "Prop hardening applied"
 
-resetprop -n persist.sys.dev_mode 0
-resetprop -n persist.sys.debuggable 0
+resetprop -n persist.sys.dev_mode 0 2>/dev/null || true
+resetprop -n persist.sys.debuggable 0 2>/dev/null || true
 log "CLEANUP" "Persistent dev mode props reset"
 
 log "CLEANUP" "Applying boot hardening..."
-apply_boot_hardening
+apply_boot_hardening || true
 log "CLEANUP" "Boot hardening applied"
 
 if [ "$(getenforce 2>/dev/null)" = "Enforcing" ]; then
