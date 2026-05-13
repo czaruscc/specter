@@ -1,4 +1,4 @@
-import { shellEscape } from './utils.js';
+import { shellEscape, escapeHtml } from './utils.js';
 import { getTranslation } from './i18n.js';
 import { exec } from './bridge.js';
 
@@ -126,6 +126,4 @@ export async function openFileBrowser(onSelect: (path: string) => void) {
   await loadDir(currentPath);
 }
 
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+

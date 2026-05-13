@@ -30,6 +30,7 @@ export interface InfoJson {
   keybox_format?: string;
   tee_status?: string;
   security_patch?: string;
+  build_patch?: string;
   flags?: { twrp?: boolean; blacklist?: boolean };
 }
 

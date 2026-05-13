@@ -9,7 +9,7 @@ export async function loadContributors() {
 
   let devs: DevEntry[] = [];
   try {
-    devs = await fetchJson<DevEntry[]>(`json/dev.json?ts=${Date.now()}`) || [];
+    devs = await fetchJson<DevEntry[]>(`json/dev.json`, 1800000) || [];
     if (!devs.length) { console.warn('Failed to load contributors'); return; }
   } catch {
     console.warn('Failed to load contributors');

@@ -19,7 +19,7 @@ fi
 DECODE_FILE="/data/local/tmp/keybox_decode.$$"
 TEMP_FILE="/data/local/tmp/keybox.tmp.$$"
 trap 'rm -f "$DECODE_FILE" "$TEMP_FILE" 2>/dev/null' EXIT
-_FALLBACK_BASE="${KEYBOX_URL}/fallback"
+
 
 _custom_type=$(cat "$CONFIG_DIR/kb_custom_type.val" 2>/dev/null || echo "")
 _custom_value=$(cat "$CONFIG_DIR/kb_custom_value.val" 2>/dev/null || echo "")
@@ -71,20 +71,20 @@ log "KEYBOX" "Fetching available keyboxes..."
 _history=$(download "$CATALOG_URL" 2>/dev/null)
 
 if [ -z "$_history" ]; then
-  log "KEYBOX" "Catalog fetch failed, probing fallback URLs..."
-  _valid=""
-  for _i in 0 1 2 3 4 5 6 7 8 9; do
-    _url="$_FALLBACK_BASE/keybox$_i"
-    if { command -v wget >/dev/null 2>&1 && wget --spider "$_url" 2>/dev/null; } || { command -v curl >/dev/null 2>&1 && curl --output /dev/null --silent --head --fail "$_url" 2>/dev/null; }; then
-      _valid="$_valid $_i"
+  log "KEYBOX" "Catalog fetch failed, trying fallback keyboxes..."
+  for _pair in $FALLBACK_KEYBOXES; do
+    _url="${KEYBOX_URL}/${_pair}"
+    _tmp="/data/local/tmp/kb_fb_$$_$(echo "$_pair" | tr '/' '_')"
+    if download "$_url" "$_tmp" && [ -s "$_tmp" ]; then
+      mv "$_tmp" "$TEMP_FILE"
+      _DL_SOURCE="fallback"
+      _DL_VER="$_pair"
+      log "KEYBOX" "Fallback selected: $_pair"
+      break
     fi
+    rm -f "$_tmp"
   done
-  if [ -n "$_valid" ]; then
-    _pick=$(echo "$_valid" | tr ' ' '\n' | awk 'BEGIN{srand()} {print rand(), $0}' | sort -n | head -1 | cut -d' ' -f2)
-    _DL_SOURCE="fallback"
-    _DL_VER="keybox$_pick"
-    log "KEYBOX" "Fallback selected: $_DL_VER"
-  else
+  if [ -z "$_DL_SOURCE" ]; then
     log "KEYBOX" "Error: No fallback keybox found"
     exit 1
   fi
@@ -109,7 +109,7 @@ else
 fi
 
 _DL_URL="${KEYBOX_URL}/${_DL_SOURCE}/${_DL_VER}"
-[ "$_DL_SOURCE" = "fallback" ] && _DL_URL="${_FALLBACK_BASE}/${_DL_VER}"
+[ "$_DL_SOURCE" = "fallback" ] && _DL_URL="${KEYBOX_URL}/${_DL_VER}"
 
 log "KEYBOX" "Downloading keybox..."
 download "$_DL_URL" > "$TEMP_FILE" || {

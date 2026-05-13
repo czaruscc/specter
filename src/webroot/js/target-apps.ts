@@ -20,113 +20,34 @@ const TARGET_STATE_ORDER: TargetState[] = ['unchecked', 'bare', 'conditional', '
 const BLACKLIST_STATE_ORDER: BlacklistState[] = ['unchecked', 'blacklisted'];
 
 const TARGET_ICONS: Record<string, string> = {
-  unchecked: '',
-  bare: 'done',
-  conditional: '',
-  force: '',
+  unchecked: '', bare: 'done', conditional: '', force: '',
 };
 const TARGET_TEXT: Record<string, string> = {
-  unchecked: '',
-  bare: '',
-  conditional: '?',
-  force: '!',
+  unchecked: '', bare: '', conditional: '?', force: '!',
 };
 const TARGET_LABEL_KEYS: Record<string, string> = {
-  unchecked: 'ta_state_unchecked',
-  bare: 'ta_state_bare',
-  conditional: 'ta_state_conditional',
-  force: 'ta_state_force',
+  unchecked: 'ta_state_unchecked', bare: 'ta_state_bare',
+  conditional: 'ta_state_conditional', force: 'ta_state_force',
 };
 
 const BLACKLIST_ICONS: Record<string, string> = {
-  unchecked: '',
-  blacklisted: 'block',
+  unchecked: '', blacklisted: 'block',
 };
 const BLACKLIST_TEXT: Record<string, string> = {
-  unchecked: '',
-  blacklisted: '',
+  unchecked: '', blacklisted: '',
 };
 const BLACKLIST_LABEL_KEYS: Record<string, string> = {
-  unchecked: 'bl_state_not_blacklisted',
-  blacklisted: 'bl_state_blacklisted',
+  unchecked: 'bl_state_not_blacklisted', blacklisted: 'bl_state_blacklisted',
 };
 
 const TARGET_CACHE_FILE = '/data/adb/Specter/app_labels.json';
 const APP_CATALOG_API = 'https://rawbin.netlify.app/apps';
 
-const BL_DEFAULTS = [
-  'com.android.chrome', 'com.google.android.apps.photos', 'com.google.android.youtube',
-  'com.topjohnwu.magisk', 'io.github.vvb2060.mahoshojo', 'io.github.vvb2060.keyattestation',
-  'io.github.qwq233.keyattestation', 'com.eltavine.duckdetector', 'com.rem01gaming.disclosure',
-  'com.reveny.nativechecker', 'com.reveny.environmentchecker', 'com.reveny.rootchecker',
-  'com.scottyab.rootbeer', 'com.scottyab.rootbeer.sample', 'com.kimchangyoun.rootbeerfresh',
-  'com.kimchangyoun.magiskdetector', 'com.zhenxi.hunter', 'icu.nullptr.nativetest',
-  'icu.nullptr.applistdetector', 'com.byxiaorun.detector', 'com.jrummyapps.rootchecker',
-  'com.smlj.rootcheck', 'com.devadvance.rootcloak', 'com.devadvance.rootcloakplus', 'mmrl',
-];
-
-let apps: TargetApp[] = [];
-let filteredApps: TargetApp[] = [];
-let currentFilter: 'all' | 'selected' | 'not_selected' = 'all';
-let currentSearch = '';
-let showSystemApps = false;
-let sysPkgs: string[] = [];
-let mode: Mode = 'target';
-
 function t(key: string, fallback: string): string {
   return getTranslation(key) || fallback;
 }
 
-async function loadAppLabels(installedPkgs: string[]): Promise<Map<string, string>> {
-  const labels = new Map<string, string>();
-  let cached: Record<string, string> = {};
-
-  const { stdout: mtimeRaw } = await exec(`stat --format %Y ${TARGET_CACHE_FILE} 2>/dev/null || echo "0"`);
-  const mtime = parseInt(mtimeRaw.trim(), 10) || 0;
-  const age = Date.now() / 1000 - mtime;
-  const needsRefresh = mtime === 0 || age >= 86400;
-
-  if (!needsRefresh) {
-    const { stdout: cachedRaw } = await exec(`cat ${TARGET_CACHE_FILE} 2>/dev/null || echo "{}"`);
-    try { cached = JSON.parse(cachedRaw || '{}'); } catch { cached = {}; }
-  }
-
-  if (needsRefresh || Object.keys(cached).length === 0) {
-    try {
-      const catalog = await fetchJson<Record<string, string>>(APP_CATALOG_API);
-      if (catalog) {
-        const content = JSON.stringify(catalog);
-        await exec(`mkdir -p /data/adb/Specter && cat > ${TARGET_CACHE_FILE} << 'CEOF'\n${content}\nCEOF`);
-        cached = catalog;
-      }
-    } catch (e) {
-      console.warn('App catalog fetch failed, using cached/fallback', e);
-      if (Object.keys(cached).length === 0) {
-        const { stdout: cachedRaw } = await exec(`cat ${TARGET_CACHE_FILE} 2>/dev/null || echo "{}"`);
-        try { cached = JSON.parse(cachedRaw || '{}'); } catch { cached = {}; }
-      }
-    }
-  }
-
-  for (const pkg of installedPkgs) {
-    labels.set(pkg, cached[pkg] || pkg);
-  }
-  return labels;
-}
-
-export async function refreshAppCatalog(): Promise<void> {
-  try {
-    const catalog = await fetchJson<Record<string, string>>(APP_CATALOG_API);
-    if (catalog) {
-      const content = JSON.stringify(catalog);
-      await exec(`mkdir -p /data/adb/Specter && cat > ${TARGET_CACHE_FILE} << 'CEOF'\n${content}\nCEOF`);
-    }
-  } catch (e) {
-    console.warn('App catalog force refresh failed', e);
-  }
-}
-
-function nextState(current: AppState): AppState {
+function nextState(current: AppState, mode: Mode): AppState {
   if (mode === 'blacklist') {
     const idx = BLACKLIST_STATE_ORDER.indexOf(current as BlacklistState);
     return BLACKLIST_STATE_ORDER[(idx + 1) % BLACKLIST_STATE_ORDER.length];
@@ -135,25 +56,21 @@ function nextState(current: AppState): AppState {
   return TARGET_STATE_ORDER[(idx + 1) % TARGET_STATE_ORDER.length];
 }
 
-function stateIcons(state: AppState): string {
-  if (mode === 'blacklist') return BLACKLIST_ICONS[state] || '';
-  return TARGET_ICONS[state] || '';
+function stateIcons(state: AppState, mode: Mode): string {
+  return mode === 'blacklist' ? BLACKLIST_ICONS[state] || '' : TARGET_ICONS[state] || '';
 }
 
-function stateText(state: AppState): string {
-  if (mode === 'blacklist') return BLACKLIST_TEXT[state] || '';
-  return TARGET_TEXT[state] || '';
+function stateText(state: AppState, mode: Mode): string {
+  return mode === 'blacklist' ? BLACKLIST_TEXT[state] || '' : TARGET_TEXT[state] || '';
 }
 
-function stateLabelKey(state: AppState): string {
+function stateLabelKey(state: AppState, mode: Mode): string {
   if (mode === 'blacklist') return BLACKLIST_LABEL_KEYS[state] || 'unchecked';
   return TARGET_LABEL_KEYS[state] || 'unchecked';
 }
 
-export async function openTargetAppsManager() {
-  const overlay = document.createElement('div');
-  overlay.className = 'ta-overlay';
-  overlay.innerHTML = `
+function buildOverlayHTML(): string {
+  return `
     <div class="ta-header">
       <button id="ta-back" class="ta-back-btn">
         <md-icon>arrow_back</md-icon>
@@ -210,6 +127,69 @@ export async function openTargetAppsManager() {
       <p>${t('ta_loading', 'Loading apps...')}</p>
     </div>
   `;
+}
+
+async function loadAppLabels(installedPkgs: string[]): Promise<Map<string, string>> {
+  const labels = new Map<string, string>();
+  let cached: Record<string, string> = {};
+
+  const { stdout: mtimeRaw } = await exec(`stat --format %Y ${TARGET_CACHE_FILE} 2>/dev/null || echo "0"`);
+  const mtime = parseInt(mtimeRaw.trim(), 10) || 0;
+  const age = Date.now() / 1000 - mtime;
+  const needsRefresh = mtime === 0 || age >= 86400;
+
+  if (!needsRefresh) {
+    const { stdout: cachedRaw } = await exec(`cat ${TARGET_CACHE_FILE} 2>/dev/null || echo "{}"`);
+    try { cached = JSON.parse(cachedRaw || '{}'); } catch { cached = {}; }
+  }
+
+  if (needsRefresh || Object.keys(cached).length === 0) {
+    try {
+      const catalog = await fetchJson<Record<string, string>>(APP_CATALOG_API);
+      if (catalog) {
+        const content = JSON.stringify(catalog);
+        await exec(`mkdir -p /data/adb/Specter && cat > ${TARGET_CACHE_FILE} << 'CEOF'\n${content}\nCEOF`);
+        cached = catalog;
+      }
+    } catch (e) {
+      console.warn('App catalog fetch failed, using cached/fallback', e);
+      if (Object.keys(cached).length === 0) {
+        const { stdout: cachedRaw } = await exec(`cat ${TARGET_CACHE_FILE} 2>/dev/null || echo "{}"`);
+        try { cached = JSON.parse(cachedRaw || '{}'); } catch { cached = {}; }
+      }
+    }
+  }
+
+  for (const pkg of installedPkgs) {
+    labels.set(pkg, cached[pkg] || pkg);
+  }
+  return labels;
+}
+
+export async function refreshAppCatalog(): Promise<void> {
+  try {
+    const catalog = await fetchJson<Record<string, string>>(APP_CATALOG_API);
+    if (catalog) {
+      const content = JSON.stringify(catalog);
+      await exec(`mkdir -p /data/adb/Specter && cat > ${TARGET_CACHE_FILE} << 'CEOF'\n${content}\nCEOF`);
+    }
+  } catch (e) {
+    console.warn('App catalog force refresh failed', e);
+  }
+}
+
+export async function openTargetAppsManager() {
+  const overlay = document.createElement('div');
+  overlay.className = 'ta-overlay';
+  overlay.innerHTML = buildOverlayHTML();
+
+  let apps: TargetApp[] = [];
+  let filteredApps: TargetApp[] = [];
+  let currentFilter: 'all' | 'selected' | 'not_selected' = 'all';
+  let currentSearch = '';
+  let showSystemApps = false;
+  let sysPkgs: string[] = [];
+  let mode: Mode = 'target';
 
   document.body.appendChild(overlay);
 
@@ -219,7 +199,7 @@ export async function openTargetAppsManager() {
 
   const list = overlay.querySelector('#ta-list') as HTMLElement;
   const loading = overlay.querySelector('#ta-loading') as HTMLElement;
-  const searchInput = overlay.querySelector('#ta-search') as any;
+  const searchInput = overlay.querySelector('#ta-search') as MdOutlinedTextField;
   const titleEl = overlay.querySelector('.ta-title') as HTMLElement;
   const targetMap = new Map<string, AppState>();
   let blPkgs = new Set<string>();
@@ -235,13 +215,13 @@ export async function openTargetAppsManager() {
   overlay.querySelector('#ta-back')!.addEventListener('click', closeOverlay);
 
   overlay.querySelector('#ta-menu-btn')!.addEventListener('click', () => {
-    const menu = overlay.querySelector('#ta-menu') as any;
+    const menu = overlay.querySelector('#ta-menu') as MdMenu;
     menu.open = !menu.open;
   });
 
   function closeTapMenu() {
-    const menu = overlay.querySelector('#ta-menu') as any;
-    if (menu.open) menu.open = false;
+    const menu = overlay.querySelector('#ta-menu') as MdMenu | null;
+    if (menu?.open) menu.open = false;
   }
 
   function setMode(newMode: Mode) {
@@ -251,8 +231,8 @@ export async function openTargetAppsManager() {
     const toggleHeadline = toggleItem?.querySelector('[slot="headline"]');
     const modeItem = overlay.querySelector('#ta-toggle-mode') as HTMLElement;
     const modeHeadline = modeItem?.querySelector('[slot="headline"]');
-    const filterSel = overlay.querySelector('#ta-filter-selected') as any;
-    const filterNot = overlay.querySelector('#ta-filter-not-selected') as any;
+    const filterSel = overlay.querySelector('#ta-filter-selected') as MdFilterChip | null;
+    const filterNot = overlay.querySelector('#ta-filter-not-selected') as MdFilterChip | null;
 
     if (mode === 'blacklist') {
       titleEl.textContent = t('bl_title', 'Blacklist');
@@ -269,8 +249,8 @@ export async function openTargetAppsManager() {
       if (filterNot) { filterNot.label = t('ta_filter_not_selected', 'Not Selected'); filterNot.icon = 'radio_button_unchecked'; }
     }
     currentFilter = 'all';
-    overlay.querySelectorAll('.ta-filters md-filter-chip').forEach(c => { (c as any).selected = false; });
-    (overlay.querySelector('#ta-filter-all') as any).selected = true;
+    overlay.querySelectorAll('.ta-filters md-filter-chip').forEach(c => { (c as MdFilterChip).selected = false; });
+    (overlay.querySelector('#ta-filter-all') as MdFilterChip).selected = true;
     applyFilters();
   }
 
@@ -443,10 +423,10 @@ export async function openTargetAppsManager() {
       const circle = document.createElement('div');
       circle.className = 'ta-state-circle';
       circle.setAttribute('data-state', app.state);
-      circle.setAttribute('aria-label', t(stateLabelKey(app.state), app.state));
+      circle.setAttribute('aria-label', t(stateLabelKey(app.state, mode), app.state));
 
-      const icon = stateIcons(app.state);
-      const text = stateText(app.state);
+      const icon = stateIcons(app.state, mode);
+      const text = stateText(app.state, mode);
       circle.innerHTML = icon
         ? `<md-icon class="ta-state-icon">${icon}</md-icon>`
         : text
@@ -455,12 +435,12 @@ export async function openTargetAppsManager() {
 
       circle.addEventListener('click', (e) => {
         e.stopPropagation();
-        app.state = nextState(app.state);
+        app.state = nextState(app.state, mode);
         circle.setAttribute('data-state', app.state);
-        circle.setAttribute('aria-label', t(stateLabelKey(app.state), app.state));
+        circle.setAttribute('aria-label', t(stateLabelKey(app.state, mode), app.state));
         const iconEl = circle.querySelector('.ta-state-icon');
-        const newIcon = stateIcons(app.state);
-        const newText = stateText(app.state);
+        const newIcon = stateIcons(app.state, mode);
+        const newText = stateText(app.state, mode);
         if (iconEl) {
           if (newIcon) {
             iconEl.outerHTML = `<md-icon class="ta-state-icon">${newIcon}</md-icon>`;
@@ -530,9 +510,9 @@ export async function openTargetAppsManager() {
   });
 
   function wireFilter(id: string, filter: typeof currentFilter) {
-    const chip = overlay.querySelector(id) as any;
+    const chip = overlay.querySelector(id) as MdFilterChip;
     chip.addEventListener('click', () => {
-      overlay.querySelectorAll('.ta-filters md-filter-chip').forEach(c => { (c as any).selected = false; });
+      overlay.querySelectorAll('.ta-filters md-filter-chip').forEach(c => { (c as MdFilterChip).selected = false; });
       chip.selected = true;
       currentFilter = filter;
       applyFilters();

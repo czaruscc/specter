@@ -8,10 +8,26 @@ let pendingFlush: Array<{ key: string; val: string | undefined | null }> = [];
 
 export function setModuleDir(path: string) { MODULE = path; }
 
+export async function cfgInit() {
+  if (!MODULE) return;
+  const cfgDir = shellEscape(MODULE + '/config');
+  const cmd = `for f in ${cfgDir}/*.val; do [ -f "\$f" ] || continue; k="\${f##*/}"; k="\${k%.val}"; v="\$(cat "\$f")"; [ -n "\$v" ] || continue; printf 'CFG:%s\n' "\$k"; printf '%s\n' "\$v"; done`;
+  const result = await bridgeExec(cmd);
+  const stdout = ((result as any).stdout || '').trim();
+  if (!stdout) return;
+  const lines = stdout.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].startsWith('CFG:')) continue;
+    const key = lines[i].slice(4);
+    const value = lines[++i] || '';
+    cache[key] = value;
+  }
+}
+
 async function readConfig(key: string): Promise<string | null> {
   if (!MODULE) return null;
   const result = await bridgeExec(
-    `ksud module config get ${shellEscape(key)} 2>/dev/null || cat ${shellEscape(MODULE + '/config/' + key + '.val')} 2>/dev/null || true`
+    `cat ${shellEscape(MODULE + '/config/' + key + '.val')} 2>/dev/null || true`
   );
   return ((result as any).stdout || '').trim() || null;
 }
@@ -19,7 +35,6 @@ async function readConfig(key: string): Promise<string | null> {
 function writeConfig(key: string, val: string | undefined | null) {
   if (!MODULE) return Promise.resolve();
   const cmd =
-    `ksud module config set ${shellEscape(key)} ${shellEscape(val || '')} 2>/dev/null || ` +
     `mkdir -p ${shellEscape(MODULE + '/config')} && printf '%s' ${shellEscape(val || '')} > ${shellEscape(MODULE + '/config/' + key + '.val')}`;
   return bridgeExec(cmd).catch((err: any) => console.warn('Config write failed for', key, err));
 }

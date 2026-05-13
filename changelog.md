@@ -321,3 +321,51 @@
 ### Other
 - README simplified — replaced verbose background with quick start, streamlined features list, added screenshot grid.
 - Removed CI badge from README.
+
+## v1.3.1
+
+### WebUI Refactoring — Complete Restructure
+
+- **app.ts split** from 844 to 140 lines — extracted 5 domain modules: `navigation.ts` (nav tabs, scroll), `toggles.ts` (control toggles, dev mode), `actions.ts` (script runners, confirm dialog), `security-patch-ui.ts` (patch date dialog), `keybox-ui.ts` (install button, provider select, full custom keybox flow with serial detection + catalog matching)
+- **target-apps.ts cleanup** — eliminated 7 module-level mutable variables (`apps`, `filteredApps`, `currentFilter`, `currentSearch`, `showSystemApps`, `sysPkgs`, `mode`); all state is now local to `openTargetAppsManager` closure. Extracted 60-line inline HTML template to `buildOverlayHTML()`. State-dependent helpers (`nextState`, `stateIcons`, `stateText`, `stateLabelKey`) now receive `mode` as a parameter — pure functions with no global state.
+
+### Performance — Caching & Network
+
+- **Batch config init** (`cfg.ts`): new `cfgInit()` reads all config files in a single bridge exec (`for f in config/*.val; do ...`) instead of ~15 separate shell spawns. Eliminates ~15× bridge round trips on first load.
+- **HTTP fetch cache** (`utils.ts`): `fetchJson()` now accepts optional `ttlMs` parameter. Remote API calls are cached in-memory — keybox catalog: 5 min, dev.json: 30 min. Local `/json/.*` calls are never cached (always fresh).
+- **Network polling reduced** (`network.ts`): interval lowered from 3s to 15s. Browser `online`/`offline` events cover instant status changes.
+- **Device init streamlined** (`device.ts`): `initDevice()` runs shell scripts directly (no pre-fetch). The original pattern — run script, then fetch JSON — restored after stale-while-revalidate caused a regression.
+
+### APatch / KSU Compatibility
+
+- **`download()` PATH fix** (`common.sh`): added `/data/adb/ap/bin:/data/adb/ksu/bin` so `busybox` is found on APatch and KernelSU. Uses `busybox wget` (with `--no-check-certificate`) as primary transport — same pattern as PlayIntegrityFix. Falls back to `curl` if busybox wget fails.
+- **`check_network()`** (`common.sh`): same PATH fix. Uses `busybox wget -qO /dev/null` instead of `wget --spider` (not supported by busybox/toybox wget).
+
+### Keybox Fallback Fix
+
+- **Dead fallback URLs replaced** (`keybox.sh`): the fallback loop probed `keybox0` through `keybox9` under `/key/fallback/` which returned 404. Replaced with `FALLBACK_KEYBOXES` in `urls.sh` — real provider/version pairs (`Yuri/8`, `OGCOMPLEX/1`, `Trigon/1`, `Evokerr/1`, `Fateh/1`) that actually exist on the server.
+- **Fallback probing method** (`keybox.sh`): removed non-portable `wget --spider`/`curl --head` probe. Now uses the proven `download()` function directly — tries each URL, accepts the first non-empty response.
+
+### Type Safety
+
+- **MDC type declarations** (`mdc.d.ts`): typed all 17 Material Design custom elements (`md-switch`, `md-dialog`, `md-select`, `md-outlined-text-field`, `md-menu`, `md-chip`, `md-filter-chip`, `md-assist-chip`, `md-navigation-tab`, `md-filled-button`, `md-filled-tonal-button`, `md-text-button`, `md-circular-progress`, `md-outlined-segmented-button`, `md-outlined-select`, `md-select-option`, `md-filled-text-field`). All extend `HTMLElement`, eliminating ~60 `as any` type assertions across the codebase.
+- **Dialog factory** (`dialog.ts`): added `createDialog()`, `showDialog()`, `showConfirm()` — encapsulates the 6-step dialog boilerplate (`createElement`, `innerHTML`, `appendChild`, `querySelector`, `addEventListener`, `show`/`close`) repeated 10+ times across the codebase.
+- **Zero type errors**: full project passes `tsc --noEmit` cleanly.
+
+### Code Cleanup
+
+- **Duplicated toggle array removed**: `CONTROL_TOGGLES` extracted to `constants.ts` — the same 10-entry toggle array was defined identically in `wireControlToggles()` and `refreshControlToggles()`.
+- **Duplicated month calc removed**: `defaultSecurityPatch()` extracted to `constants.ts` — the same 6-line month calculation appeared twice in `wireSecurityPatch()`.
+- **Private `escapeHtml` removed** (`file-browser.ts`): now imports from `utils.ts` instead of maintaining its own copy.
+- **Dead export removed**: `evictFetchCache` from `utils.ts` — declared but never imported anywhere.
+- **Removed `CONTROL_TOGGLES` unused import** from `app.ts`.
+
+### Security Patch
+
+- **System fallback** (`device-info.sh`): now reads `ro.build.version.security_patch` (the real build property, never lies) alongside the spoofed Tricky Store value. `device.ts:applyDeviceInfo()` shows the spoofed patch if set, falls back to the real system patch. The info card always shows meaningful data — no more `—` when the user hasn't set a spoofed value.
+
+### UI Fixes
+
+- **Nav bar indicator invisible on first load** (`navigation.ts`): the "pill" background on the active tab never appeared on initial page load. Root cause: the first tab already had `nav-tab--active` in HTML, so `navigateTo('#home')` skipped `activateTab()` entirely, and `reposition()` was never called. The indicator div had no `left`/`width` set. Fixed by calling `reposition()` on the already-active tab after `navigateTo()`.
+- **Responsive browse button** (`keybox-ui.ts`, `app.css`): the file browser row now uses two separate buttons toggled via `@media (max-width: 480px)` — `md-filled-tonal-button` with "Browse" text on wide screens, native `<button>` with `folder_open` icon on narrow screens. Both use `--md-sys-color-primary-container` background for visual consistency. Icon is perfectly centered via `display:inline-flex; align-items:center; justify-content:center`.
+- **File browser row layout** (`keybox-ui.ts`): the assist chip now uses `flex:1` and `text-overflow:ellipsis` to fill available width with truncation. Browse button is a 40×40px square on narrow screens, auto-sized on wide. The flex container uses `width:100%` to fill the card.

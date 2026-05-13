@@ -13,3 +13,30 @@ export const API_URLS: Record<string, string> = {
   GITHUB: 'https://github.com/dpejoh/specter',
   TELEGRAM: 'https://t.me/dpejoh',
 };
+
+export interface ToggleDef {
+  id: string;
+  key: string;
+  default?: string;
+}
+
+export const CONTROL_TOGGLES: ToggleDef[] = [
+  { id: 'toggle-recovery', key: 'toggle_recovery' },
+  { id: 'toggle-boot_hardening', key: 'toggle_boot_hardening' },
+  { id: 'toggle-dev_options', key: 'toggle_dev_options' },
+  { id: 'toggle-bootloader_spoofer', key: 'toggle_bootloader_spoofer' },
+  { id: 'toggle-rom_spoof', key: 'toggle_rom_spoof' },
+  { id: 'toggle-lsposed', key: 'toggle_lsposed' },
+  { id: 'toggle-action_gms', key: 'toggle_action_gms' },
+  { id: 'toggle-action_target', key: 'toggle_action_target' },
+  { id: 'toggle-action_security_patch', key: 'toggle_action_security_patch' },
+  { id: 'toggle-action_pif', key: 'toggle_action_pif', default: '0' },
+];
+
+export function defaultSecurityPatch(): string {
+  const now = new Date();
+  const m = now.getMonth();
+  const prevM = m === 0 ? 12 : m;
+  const prevY = m === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  return `${prevY}-${String(prevM).padStart(2, '0')}-05`;
+}

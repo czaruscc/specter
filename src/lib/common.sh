@@ -7,7 +7,7 @@ die() { log "ERROR" "$1"; exit 1; }
 
 download() {
     _dl_url="$1" _dl_output="$2" _dl_sha256="$3" _dl_oldpath="$PATH"
-    PATH="/data/adb/magisk:/data/data/com.termux/files/usr/bin:$PATH"
+    PATH="/data/adb/ap/bin:/data/adb/ksu/bin:/data/adb/magisk:/data/data/com.termux/files/usr/bin:$PATH"
     _dl_tmp="" _dl_code=1 _dl_try=0
 
     if [ -z "$_dl_output" ]; then
@@ -16,8 +16,8 @@ download() {
     fi
 
     for _dl_try in 1 2 3; do
-        if command -v wget >/dev/null 2>&1; then
-            wget -T 10 -qO "$_dl_output" "$_dl_url" 2>/dev/null && _dl_code=0 && break
+        if busybox wget -T 10 --no-check-certificate -qO "$_dl_output" "$_dl_url" 2>/dev/null; then
+            _dl_code=0 && break
         fi
         if command -v curl >/dev/null 2>&1 && curl --version >/dev/null 2>&1; then
             curl --connect-timeout 10 -Ls -o "$_dl_output" "$_dl_url" 2>/dev/null && _dl_code=0 && break
@@ -47,7 +47,7 @@ download() {
 
 check_network() {
     _cn_oldpath="$PATH"
-    PATH="/data/adb/magisk:/data/data/com.termux/files/usr/bin:$PATH"
+    PATH="/data/adb/ap/bin:/data/adb/ksu/bin:/data/adb/magisk:/data/data/com.termux/files/usr/bin:$PATH"
     _cn_dns="" _cn_endpoint="https://clients3.google.com/generate_204" _cn_retry=0
 
     for _cn_dns in "1.1.1.1" "8.8.8.8" "9.9.9.9"; do
@@ -55,8 +55,8 @@ check_network() {
     done
 
     for _cn_retry in 1 2 3; do
-        if command -v wget >/dev/null 2>&1; then
-            wget -T 5 --spider "$_cn_endpoint" >/dev/null 2>&1 && PATH="$_cn_oldpath" && unset _cn_oldpath _cn_dns _cn_endpoint _cn_retry && return 0
+        if busybox wget -T 5 -qO /dev/null "$_cn_endpoint" 2>/dev/null; then
+            PATH="$_cn_oldpath" && unset _cn_oldpath _cn_dns _cn_endpoint _cn_retry && return 0
         fi
         if command -v curl >/dev/null 2>&1 && curl --version >/dev/null 2>&1; then
             curl --connect-timeout 5 -sI "$_cn_endpoint" >/dev/null 2>&1 && PATH="$_cn_oldpath" && unset _cn_oldpath _cn_dns _cn_endpoint _cn_retry && return 0

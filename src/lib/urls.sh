@@ -7,3 +7,4 @@ GOOGLE_REVOCATION_URL="https://android.googleapis.com/attestation/status?encrypt
 RKA_HOST="rp.mhmrdd.me"
 RKA_TCP=59416
 RKA_TOKEN="${RKA_TOKEN:-yurikey-5b70e270d6d69cd399c59ca3d62ccf6e}"
+FALLBACK_KEYBOXES="Yuri/8 OGCOMPLEX/1 Trigon/1 Evokerr/1 Fateh/1"

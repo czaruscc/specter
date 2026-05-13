@@ -40,7 +40,8 @@ else
   _keybox_format="none"
 fi
 
-# Security patch date
+# Security patch date — real system value + optional spoofed value
+_build_patch=$(getprop ro.build.version.security_patch 2>/dev/null || echo "")
 _patch_date=$(grep '^boot=' /data/adb/tricky_store/security_patch.txt 2>/dev/null | cut -d= -f2 || echo "")
 
 # Flags
@@ -68,10 +69,11 @@ cat <<EOF > "$INFO_PATH"
   "keybox_format": "$_keybox_format",
   "tee_status": "$_tee_status",
   "security_patch": "$_patch_date",
+  "build_patch": "$_build_patch",
   "flags": {
     "twrp": $_twrp,
     "blacklist": $_blacklist
   }
 }
 EOF
-unset _android_ver _kernel_ver _root_type _version _keybox_format _tee_status _patch_date _twrp _blacklist
+unset _android_ver _kernel_ver _root_type _version _keybox_format _tee_status _build_patch _patch_date _twrp _blacklist

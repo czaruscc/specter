@@ -7,7 +7,7 @@ let networkInterval: ReturnType<typeof setInterval> | null = null;
 
 export function initNetwork() {
   updateNetworkStatus();
-  networkInterval = setInterval(updateNetworkStatus, 3000);
+  networkInterval = setInterval(updateNetworkStatus, 15000);
   window.addEventListener('online', updateNetworkStatus);
   window.addEventListener('offline', updateNetworkStatus);
   document.addEventListener('visibilitychange', () => {
@@ -16,7 +16,7 @@ export function initNetwork() {
       networkInterval = null;
     } else if (!networkInterval) {
       updateNetworkStatus();
-      networkInterval = setInterval(updateNetworkStatus, 3000);
+      networkInterval = setInterval(updateNetworkStatus, 15000);
     }
   });
   window.addEventListener('beforeunload', () => {

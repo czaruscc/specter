@@ -8,5 +8,5 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/webroot/js/**/*.ts"]
+  "include": ["src/webroot/js/**/*"]
 }

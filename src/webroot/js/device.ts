@@ -6,8 +6,7 @@ import { getTranslation } from './i18n.js';
 import type { InfoJson, KeyboxInfoJson } from './types.js';
 
 export async function initDevice() {
-  await refreshDevice();
-  await refreshKeyboxStatus();
+  await Promise.all([refreshDevice(), refreshKeyboxStatus()]);
 }
 
 export async function refreshDevice() {
@@ -48,7 +47,7 @@ function applyDeviceInfo(data: InfoJson) {
   setText('kernel-value', data.kernel || '—');
   setText('root-value', data.root || '—');
   setText('version-info-value', data.version || '—');
-  setText('patch-value', data.security_patch || '—');
+  setText('patch-value', data.security_patch || data.build_patch || '—');
 }
 
 function applyFlags(flags: { twrp?: boolean }) {
