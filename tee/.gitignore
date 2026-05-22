@@ -1,0 +1,8 @@
+/build
+/app/build
+/.gradle
+.gradle/
+.idea
+*.iml
+*.zip
+secrets.properties

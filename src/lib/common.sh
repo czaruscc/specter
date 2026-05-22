@@ -593,8 +593,8 @@ resolve_conflicts() {
 
   migrate_conflict_config
 
-  # Check the toggle — respects user's choice for late-boot re-blocking
-  _feature_enabled toggle_bootloader_spoofer && disable_bootloader_spoofer
+  # Silent cleanup of conflicting bootloader spoofer
+  disable_bootloader_spoofer
 
   while IFS='|' read -r _rc_id _rc_name _rc_scripts _rc_features _rc_type; do
     [ -z "$_rc_id" ] && continue
@@ -655,7 +655,7 @@ EOF
 # Called by WebUI after changing a single module's priority
 apply_conflict_toggles() {
   # Boot-time toggles
-  for _ac_feature in boot_hardening prop_handler security_patch suspicious_props lsposed rom_spoof bootloader_spoofer; do
+  for _ac_feature in boot_hardening prop_handler suspicious_props lsposed recovery; do
     if _conflict_claimed "$_ac_feature"; then
       cfg_set "toggle_$_ac_feature" 0
     else
@@ -663,7 +663,7 @@ apply_conflict_toggles() {
     fi
   done
   # Action-pipeline toggles (only where action.sh gates)
-  for _ac_feature in target security_patch keybox; do
+  for _ac_feature in target security_patch keybox gms pif; do
     if _conflict_claimed "$_ac_feature"; then
       cfg_set "toggle_action_$_ac_feature" 0
     else

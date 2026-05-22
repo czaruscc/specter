@@ -6,9 +6,7 @@ MODDIR=${0%/*}
 . "$MODDIR/../lib/package_list.sh"
 . "$MODDIR/../lib/config_env.sh"
 
-[ -f "/data/adb/Specter/target_applied" ] && { log "TARGET" "Interactive App Targeting used — skipping auto generation"; exit 0; }
-
-log "TARGET" "Start"
+log "TARGET" "Start (merge)"
 
 [ -d "$TRICKY_DIR" ] || die "Tricky Store data directory not found"
 
@@ -38,10 +36,12 @@ if _is_teesimulator; then
 fi
 
 _count=0
+_added=0
 MODULE_ROOT="${MODDIR%/features}"
 TEMP_PKGS="$MODULE_ROOT/pkgs.txt"
 _TMP_TARGET="${TARGET_TXT}.new.$$"
-trap 'rm -f "$TEMP_PKGS" "${TEMP_PKGS}.filtered" "$_TMP_TARGET"' EXIT
+_TMP_EXIST="${TARGET_TXT}.exist.$$"
+trap 'rm -f "$TEMP_PKGS" "${TEMP_PKGS}.filtered" "$_TMP_TARGET" "$_TMP_EXIST"' EXIT
 
 teeBroken="false"
 [ -f "$TEE_STATUS" ] && teeBroken=$(grep -E '^(teeBroken|tee_broken)=' "$TEE_STATUS" 2>/dev/null | cut -d= -f2 || echo "false")
@@ -72,9 +72,50 @@ if [ -f "$_customize" ]; then
   log "TARGET" "customize.txt mode: $_customize_mode"
 fi
 
-for entry in $FIXED_TARGETS; do
-  echo "$entry" >> "$_TMP_TARGET"
+_normalize_pkg() {
+  _line="$1"
+  case "$_line" in
+    *!) _line=${_line%!} ;;
+    *\?) _line=${_line%\?} ;;
+  esac
+  printf '%s' "$_line"
+}
+
+_record_existing() {
+  [ -f "$_TMP_EXIST" ] || : > "$_TMP_EXIST"
+  while IFS= read -r _line || [ -n "$_line" ]; do
+    _line=${_line%$'\r'}
+    [ -z "$_line" ] && continue
+    case "$_line" in
+      \[*\]) continue ;;
+    esac
+    _base=$(_normalize_pkg "$_line")
+    [ -n "$_base" ] && printf '%s\n' "$_base" >> "$_TMP_EXIST"
+  done < "$TARGET_TXT"
+}
+
+_append_missing() {
+  _line="$1"
+  _base=$(_normalize_pkg "$_line")
+  [ -z "$_base" ] && return 0
+  if ! grep -Fxq "$_base" "$_TMP_EXIST" 2>/dev/null; then
+    printf '%s\n' "$_line" >> "$_TMP_TARGET"
+    printf '%s\n' "$_base" >> "$_TMP_EXIST"
+    _added=$((_added + 1))
+  fi
   _count=$((_count + 1))
+}
+
+if [ -f "$TARGET_TXT" ] && [ -s "$TARGET_TXT" ]; then
+  cp "$TARGET_TXT" "$_TMP_TARGET"
+  _record_existing
+else
+  : > "$_TMP_TARGET"
+  : > "$_TMP_EXIST"
+fi
+
+for entry in $FIXED_TARGETS; do
+  _append_missing "$entry"
 done
 
 for flag in "-3" "-s"; do
@@ -120,19 +161,15 @@ for flag in "-3" "-s"; do
     if [ -z "$_suffix" ] && [ "$_custom_matched" != "true" ]; then
       [ "$teeBroken" = "true" ] && _suffix="?"
     fi
-    echo "${pkg}${_suffix}" >> "$_TMP_TARGET"
-    _count=$((_count + 1))
+    _append_missing "${pkg}${_suffix}"
   done < "$TEMP_PKGS"
   rm -f "$TEMP_PKGS" "${TEMP_PKGS}.filtered"
 done
-
-sort -u "$_TMP_TARGET" -o "$_TMP_TARGET"
 
 rm -f "${TARGET_TXT}.bak"
 [ -f "$TARGET_TXT" ] && cp "$TARGET_TXT" "${TARGET_TXT}.bak"
 mv -f "$_TMP_TARGET" "$TARGET_TXT"
 
-_count=$(wc -l < "$TARGET_TXT")
-log "TARGET" "Wrote $_count entries to target.txt"
-log "TARGET" "Finish"
+log "TARGET" "Checked $_count entries, added $_added" 
+log "TARGET" "Finish (merge)"
 exit 0

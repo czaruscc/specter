@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application
+        android:hasFragileUserData="true"
+        android:hasCode="true"
+        android:label="TEE Boothash"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.NoDisplay">
+
+        <provider
+            android:name=".Provider"
+            android:authorities="io.github.dpejoh.specter"
+            android:exported="true"
+            android:grantUriPermissions="false" />
+
+    </application>
+</manifest>

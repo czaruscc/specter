@@ -1,34 +1,43 @@
 # v1.4.1
 
+## Boot & One-time Tasks
+- **One-time boot markers** — `tee` and ROM spoof cleanup run once after install (markers set in `customize.sh`, cleared in `boot_core.sh`).
+- **Boot feature list trimmed** — regular boot dispatch now runs recovery, boot_hardening, suspicious_props, and lsposed only; security_patch/rom_spoof/bootloader_spoofer removed from the loop.
+- **Delayed boot props** switched to `apply_boot_props` for consistency.
+- **Bootloader spoofer cleanup is unconditional** — no toggle gating.
+
 ## TEE Attestation
-- **New TEE feature** (`features/tee.sh`) — runs TEE attestation via the Specter APK ContentProvider at boot, caching the result and hash. Falls back to computing the VBMeta digest from the vbmeta partition (including full chained digest via AVB chain partition descriptors + AVB footer support) when TEE is unavailable. Published to `ro.boot.vbmeta.digest` + `/data/adb/boot_hash`.
-- **VBMeta helpers extracted** — `_val`, `emit_vbmeta`, `vbmeta_digest` moved into `lib/vbmeta.sh` as a reusable library. `tee.sh` now sources it as a consumer instead of defining the functions inline. Halved `tee.sh` from 132→63 lines.
-- **Install-time TEE check removed** — `customize.sh` no longer downloads/installs the TEE check APK during module install; reads TEE status and hash from boot-time cache instead.
-- **Boot core dispatches `tee` feature** in background alongside `rom_spoof`.
+- **TEE attestation moved to boot** via Specter APK ContentProvider (`features/tee.sh`) with cached status + hash.
+- **VBMeta helpers extracted** to `lib/vbmeta.sh` and reused by TEE hash fallback logic.
+- **Install-time TEE check removed** — installer reads cached TEE status/hash only.
+
+## target.txt (Tricky Store)
+- **Set target.txt now merges** missing apps instead of overwriting; existing entries and order are preserved (`features/target_merge.sh`).
+- **Action pipeline updated** to call merge script; install-time generation still uses `target.sh`.
+
+## Play Integrity & ROM Spoof
+- **Play Integrity section added** to Tools with "Get New Fingerprint" (pif.sh) action.
+- **PIF detection cleanup renamed** to ROM spoof cleanup and shared across boot + WebUI (`rom_spoof_cleanup.sh`).
+- **Removed bootloader spoofer and ROM spoof toggles** from Controls UI.
+
+## Conflict System & Toggles
+- **Conflict registry updated** (TreatWheel → prop_handler; reduced overlap for TSupport/Yurikey/Integrity Box).
+- **Conflict toggle application expanded** to include action gms and pif toggles.
+- **Security patch boot toggle removed** from Control list.
 
 ## Keybox
-- **Custom keybox "No" path fixed** — selecting "No" (not a private keybox) no longer forces an extra detection dialog with catalog lookup + second confirmation. The keybox is installed directly, matching the "Yes" path behavior. Removed ~90 lines of dead detection dialog code.
-- **Unused imports cleaned up** — `escapeHtml`, `closeToast` removed from keybox-ui.ts imports.
+- **Custom keybox "No" path fixed** — no extra detection dialog; installs directly.
+- **Unused imports removed** in keybox UI.
 
-## Conflict System
-- **TreatWheel reclassified** from `boot_hardening` → `prop_handler`. TreatWheel now defers prop spoofing, not boot hardening.
-- **New `prop_handler` feature toggle** added to the boot-time feature list.
-- **Aggressive-only override** — `boot_core.sh` only considers `aggressive` conflict type for the override description; passives no longer produce misleading conflict banners.
+## Device Info & WebUI
+- **Recovery folder detection** now controls recovery toggle visibility.
+- **Security patch dialog cleaned up** — duplicate generate icon removed.
+- **Localization updated** for new Play Integrity and ROM spoof cleanup labels.
 
-## Security Patch
-- **Removed duplicate generate icon** — the trailing icon slot in the security patch dialog no longer has two overlapping buttons. Only the globe fetch icon remains.
-
-## Boot
-- **Fingerprint spoofing loop removed** from `spoof_build_props` — the per-prop fingerprint patching was redundant with the dedicated boot state props feature.
-- **Delayed boot props** switched from raw `sp_try` calls to `apply_boot_props` for consistency.
-
-## Device Info
-- **Recovery folder detection** — device-info.sh now scans for TWRP/OrangeFox/FOX/PBRP/PitchBlack Recovery directories. WebUI shows/hides the recovery toggle row based on `recovery_detected` flag.
-
-## Build & Misc
-- **BusyBox standalone fix** — `action.sh` now only disables standalone mode under BusyBox; KSU's native ash is left untouched.
-- **APK bundling** — `package.json` build step copies `src/apk/` into the module zip.
-- **README** — added "Thanks" section with project credits.
+## Build & Repo
+- **BusyBox standalone fix** in `action.sh` for non-BusyBox shells.
+- **APK bundling** — `src/apk/` included in module zip.
+- **Docs trimmed** — removed old architecture/dev docs from `docs/`.
 
 # v1.4.0
 

@@ -182,6 +182,7 @@
               <p class="md-typescale-title-medium info-card__value" id="patch-value">—</p>
             </md-filled-card>
 
+
             <md-filled-card class="info-card" id="tee-status-card">
               <md-icon class="info-card__icon" aria-hidden="true">security</md-icon>
               <p class="md-typescale-title-small info-card__label" data-i18n="home_tee">TEE</p>
@@ -276,15 +277,27 @@
               <md-ripple></md-ripple>
             </div>
 
+
           </div>
 
-          <h2 class="list-title" data-i18n="advance_fix_detect_pif">Fix PIF Detection</h2>
+          <h2 class="list-title" data-i18n="menu_pif_title">Play Integrity</h2>
           <div class="list-container list-container--pif">
-            <div class="list-item" data-script="pif2.sh">
+            <div class="list-item" data-script="pif.sh">
+              <div class="li-icon"><md-icon aria-hidden="true">refresh</md-icon></div>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="menu_pif_update">Get New Fingerprint</div>
+                <span class="supporting-text" data-i18n="menu_pif_update_desc">Detects your PIF variant and fetches the latest fingerprint</span>
+              </div>
+              <div class="spacer"></div>
+              <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
+              <md-ripple></md-ripple>
+            </div>
+
+            <div class="list-item" data-script="rom_spoof_cleanup.sh">
               <div class="li-icon"><md-icon aria-hidden="true">bug_report</md-icon></div>
               <div class="list-item-content">
-                <div class="toggle-text" data-i18n="advance_fix_detect_pif">Fix PIF Detection</div>
-                <span class="supporting-text" data-i18n="advance_fix_pif_desc">Removes PIF-related properties via resetprop</span>
+                <div class="toggle-text" data-i18n="advance_fix_detect_pif">Clean ROM Spoof Engines</div>
+                <span class="supporting-text" data-i18n="advance_fix_pif_desc">Removes ROM-level spoof props via resetprop</span>
               </div>
               <div class="spacer"></div>
               <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
@@ -416,28 +429,6 @@
               <md-ripple></md-ripple>
             </div>
 
-            <div class="list-item list-item--toggle" id="toggle-bootloader_spoofer-row">
-              <div class="li-icon"><md-icon aria-hidden="true">lock</md-icon></div>
-              <div class="list-item-content">
-                <div class="toggle-text" data-i18n="control_toggle_bootloader_spoofer">Bootloader Spoofer Block</div>
-                <span class="supporting-text" data-i18n="control_toggle_bootloader_spoofer_desc">Remove conflicting bootloader spoofer packages at boot</span>
-              </div>
-              <div class="spacer"></div>
-              <md-switch icons id="toggle-bootloader_spoofer"></md-switch>
-              <md-ripple></md-ripple>
-            </div>
-
-            <div class="list-item list-item--toggle" id="toggle-rom_spoof-row">
-              <div class="li-icon"><md-icon aria-hidden="true">smartphone</md-icon></div>
-              <div class="list-item-content">
-                <div class="toggle-text" data-i18n="control_toggle_rom_spoof">Block ROM Spoof Engines</div>
-                <span class="supporting-text" data-i18n="control_toggle_rom_spoof_desc">Disable ROM-level spoof engines (PixelProps, PIHooks, etc.)</span>
-              </div>
-              <div class="spacer"></div>
-              <md-switch icons id="toggle-rom_spoof"></md-switch>
-              <md-ripple></md-ripple>
-            </div>
-
             <div class="list-item list-item--toggle" id="toggle-lsposed-row">
               <div class="li-icon"><md-icon aria-hidden="true">code</md-icon></div>
               <div class="list-item-content">
@@ -448,6 +439,7 @@
               <md-switch icons id="toggle-lsposed"></md-switch>
               <md-ripple></md-ripple>
             </div>
+
           </div>
 
           <h2 class="list-title" id="conflicts-title" style="display:none" data-i18n="control_conflicts_title">Conflict Resolution</h2>
@@ -488,6 +480,7 @@
               <md-switch icons id="toggle-action_security_patch"></md-switch>
               <md-ripple></md-ripple>
             </div>
+
 
             <div class="list-item list-item--toggle" id="toggle-action_pif-row">
               <div class="li-icon"><md-icon aria-hidden="true">fingerprint</md-icon></div>

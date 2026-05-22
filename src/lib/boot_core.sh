@@ -17,17 +17,24 @@ if [ "$(toybox cat /sys/fs/selinux/enforce 2>/dev/null)" = "0" ]; then
 fi
 
 # Boot-time features — single authoritative list, all dispatched as scripts
-for _bf in recovery boot_hardening security_patch suspicious_props rom_spoof bootloader_spoofer lsposed tee; do
+for _bf in recovery boot_hardening suspicious_props lsposed; do
   case "$_bf" in *[!a-zA-Z0-9_-]*) log "BOOT" "Skipping invalid feature: $_bf"; continue ;; esac
   _feature_should_run "$_bf" || continue
-  if [ "$_bf" = "tee" ] || [ "$_bf" = "rom_spoof" ]; then
-    ( sh "$MODDIR/features/$_bf.sh" >/dev/null 2>&1 ) &
-  else
-    sh "$MODDIR/features/$_bf.sh" >/dev/null 2>&1 || true
-  fi
+  sh "$MODDIR/features/$_bf.sh" >/dev/null 2>&1 || true
 done
 unset _bf
 log "BOOT" "Boot-time features done"
+
+# TEE: run only on first boot after install (marker set by customize.sh)
+if [ -f "$SPECTER_DIR/tee_reported" ]; then
+  ( sh "$MODDIR/features/tee.sh" >/dev/null 2>&1 ) &
+  rm -f "$SPECTER_DIR/tee_reported"
+fi
+
+if [ -f "$SPECTER_DIR/rom_spoof_reported" ]; then
+  sh "$MODDIR/features/rom_spoof_cleanup.sh" >/dev/null 2>&1 || true
+  rm -f "$SPECTER_DIR/rom_spoof_reported"
+fi
 
 # Module description — rich status line
 

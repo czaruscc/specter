@@ -24,10 +24,7 @@ export const CONTROL_TOGGLES: ToggleDef[] = [
   { id: 'toggle-boot_hardening', key: 'toggle_boot_hardening' },
   { id: 'toggle-prop_handler', key: 'toggle_prop_handler' },
 
-  { id: 'toggle-bootloader_spoofer', key: 'toggle_bootloader_spoofer' },
-  { id: 'toggle-rom_spoof', key: 'toggle_rom_spoof' },
   { id: 'toggle-lsposed', key: 'toggle_lsposed' },
-  { id: 'toggle-security_patch', key: 'toggle_security_patch' },
   { id: 'toggle-suspicious_props', key: 'toggle_suspicious_props' },
   { id: 'toggle-action_gms', key: 'toggle_action_gms' },
   { id: 'toggle-action_target', key: 'toggle_action_target' },

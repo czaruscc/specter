@@ -3,17 +3,16 @@ set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
 . "$MODDIR/../lib/config_env.sh"
-[ "$(cfg_get toggle_pif 1)" = "0" ] && exit 0
 
-log "PIF2" "Start"
+log "ROM_SPOOF" "Start"
 
 if resetprop 2>/dev/null | grep -qE 'persist\.sys\.(pihooks|entryhooks|pixelprops)' || [ -f "$GMS_PROPS_FILE" ]; then
-  log "PIF2" "Spoof engines detected — cleaning"
+  log "ROM_SPOOF" "Spoof engines detected — cleaning"
   block_rom_spoof_engines
-  log "PIF2" "Done"
+  log "ROM_SPOOF" "Done"
 else
-  log "PIF2" "No spoof engines found"
+  log "ROM_SPOOF" "No spoof engines found"
 fi
 
-log "PIF2" "Finish"
+log "ROM_SPOOF" "Finish"
 exit 0

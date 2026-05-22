@@ -157,6 +157,11 @@ unset _tg_choice
 
 mkdir -p "$MODPATH/webroot/json"
 
+# Mark TEE for first-boot check (removed by boot_core.sh after running)
+mkdir -p "$SPECTER_DIR"
+echo "1" > "$SPECTER_DIR/tee_reported"
+echo "1" > "$SPECTER_DIR/rom_spoof_reported"
+
 # Conflicts are resolved automatically at boot — no interactive prompts needed
 
 return 0
