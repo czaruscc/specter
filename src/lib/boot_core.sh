@@ -8,6 +8,11 @@
 
 log "BOOT" "Running unified boot core"
 
+# Fallback migration: /data/adb/Specter → /data/adb/specter
+if [ -d "/data/adb/Specter" ] && [ ! -e "/data/adb/specter" ]; then
+  mv /data/adb/Specter /data/adb/specter 2>/dev/null && log "BOOT" "Migrated /data/adb/Specter → /data/adb/specter" || true
+fi
+
 # Boot props handled by service.sh at early boot (Magisk only — same as v1.3.2)
 
 # Protect SELinux policy files

@@ -117,7 +117,7 @@ for entry in $FIXED_TARGETS; do
   _append_missing "$entry"
 done
 
-pkgs=$(pm list packages 2>/dev/null) || {
+pkgs=$(pm list packages -3 2>/dev/null) || {
   log "TARGET" "Warning: Failed to list packages"
 }
 if [ -n "$pkgs" ]; then

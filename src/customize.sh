@@ -31,6 +31,17 @@ ui_print "|____/| .__/ \\___|\\___|\\__\\___|_|   "
 ui_print "      |_|                           "
 ui_print ""
 
+# Migrate /data/adb/Specter → /data/adb/specter
+if [ -d "/data/adb/Specter" ] && [ "$(readlink -f /data/adb/Specter)" != "/data/adb/specter" ]; then
+  if [ -d "/data/adb/specter" ]; then
+    cp -r /data/adb/Specter/* /data/adb/specter/ 2>/dev/null || true
+    rm -rf /data/adb/Specter 2>/dev/null || true
+  else
+    mv /data/adb/Specter /data/adb/specter 2>/dev/null || true
+  fi
+  ui_print "- Migrated /data/adb/Specter → /data/adb/specter"
+fi
+
 ui_print "- Checking device info..."
 detect_root_solution
 [ "$ROOT_TYPE" != "Unknown" ] && ui_print "- $ROOT_TYPE detected"

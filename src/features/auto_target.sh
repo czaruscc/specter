@@ -24,10 +24,10 @@ BLACKLIST_ENABLED="$SPECTER_DIR/blacklist_enabled"
 TEMP_LIST="$SPECTER_DIR/auto_target_pkgs.txt"
 TEMP_EXIST="$SPECTER_DIR/auto_target_existing.txt"
 TEMP_NEW="$SPECTER_DIR/auto_target_new.txt"
-DEFAULT_INTERVAL=60
+DEFAULT_INTERVAL=15
 
 INTERVAL=$(cfg_get auto_target_interval "$DEFAULT_INTERVAL")
-[ "$INTERVAL" -lt 8 ] && INTERVAL=8
+[ "$INTERVAL" -lt 3 ] && INTERVAL=3
 
 log "AUTO_TARGET" "Daemon started (PID $$, interval: ${INTERVAL}s)"
 
@@ -39,7 +39,7 @@ while true; do
   fi
 
   CURRENT_INTERVAL=$(cfg_get auto_target_interval "$INTERVAL")
-  [ "$CURRENT_INTERVAL" -lt 8 ] && CURRENT_INTERVAL=8
+  [ "$CURRENT_INTERVAL" -lt 3 ] && CURRENT_INTERVAL=3
 
   pkgs=$(pm list packages -3 2>/dev/null) || {
     sleep "$CURRENT_INTERVAL"

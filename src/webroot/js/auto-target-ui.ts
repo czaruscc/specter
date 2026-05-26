@@ -12,7 +12,7 @@ export function openAutoTargetDialog() {
   dialog.id = 'auto-target-dialog';
 
   cfgGet('toggle_auto_target', '0').then(enabled => {
-    cfgGet('auto_target_interval', '60').then(interval => {
+    cfgGet('auto_target_interval', '15').then(interval => {
       dialog.innerHTML = `
         <div slot="headline">
           <div class="at-dialog-headline">
@@ -38,14 +38,14 @@ export function openAutoTargetDialog() {
               <div class="li-icon"><md-icon aria-hidden="true">timer</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text">${t('auto_target_interval', 'Interval (seconds)')}</div>
-                <span class="supporting-text">${t('auto_target_interval_desc', 'How often to check for new apps. Minimum 1 second.')}</span>
+                <span class="supporting-text">${t('auto_target_interval_desc', 'How often to check for new apps. Minimum 3 seconds.')}</span>
               </div>
               <div class="spacer"></div>
               <md-outlined-text-field
                 id="at-interval"
                 inputmode="numeric"
                 pattern="[0-9]*"
-                min="8"
+                min="3"
                 value="${interval}"
                 class="at-interval-field"
                 style="text-align:center"
@@ -72,8 +72,8 @@ export function openAutoTargetDialog() {
 
       saveBtn.addEventListener('click', async () => {
         const newEnabled = toggle.selected ? '1' : '0';
-        const newInterval = parseInt((intervalField as any).value || '60', 10);
-        const clampedInterval = Math.max(8, newInterval);
+        const newInterval = parseInt((intervalField as any).value || '15', 10);
+        const clampedInterval = Math.max(3, newInterval);
 
         saveBtn.disabled = true;
 

@@ -40,7 +40,7 @@ const BLACKLIST_LABEL_KEYS: Record<string, string> = {
   unchecked: 'bl_state_not_blacklisted', blacklisted: 'bl_state_blacklisted',
 };
 
-const TARGET_CACHE_FILE = '/data/adb/Specter/app_labels.json';
+const TARGET_CACHE_FILE = '/data/adb/specter/app_labels.json';
 const APP_CATALOG_API = 'https://rawbin.netlify.app/apps';
 
 function t(key: string, fallback: string): string {
@@ -148,7 +148,7 @@ async function loadAppLabels(installedPkgs: string[]): Promise<Map<string, strin
       const catalog = await fetchJson<Record<string, string>>(APP_CATALOG_API);
       if (catalog) {
         const content = JSON.stringify(catalog);
-        await exec(`mkdir -p /data/adb/Specter && cat > ${TARGET_CACHE_FILE} << 'CEOF'\n${content}\nCEOF`);
+        await exec(`mkdir -p /data/adb/specter && cat > ${TARGET_CACHE_FILE} << 'CEOF'\n${content}\nCEOF`);
         cached = catalog;
       }
     } catch (e) {
@@ -171,7 +171,7 @@ export async function refreshAppCatalog(): Promise<void> {
     const catalog = await fetchJson<Record<string, string>>(APP_CATALOG_API);
     if (catalog) {
       const content = JSON.stringify(catalog);
-      await exec(`mkdir -p /data/adb/Specter && cat > ${TARGET_CACHE_FILE} << 'CEOF'\n${content}\nCEOF`);
+      await exec(`mkdir -p /data/adb/specter && cat > ${TARGET_CACHE_FILE} << 'CEOF'\n${content}\nCEOF`);
     }
   } catch (e) {
     console.warn('App catalog force refresh failed', e);
@@ -272,7 +272,7 @@ export async function openTargetAppsManager() {
     closeTapMenu();
     if (mode === 'target') {
       appendToOutput('[TARGET] Loading blacklist...');
-      exec('cat /data/adb/Specter/blacklist.txt 2>/dev/null || echo ""').then(({ stdout }) => {
+      exec('cat /data/adb/specter/blacklist.txt 2>/dev/null || echo ""').then(({ stdout }) => {
         blPkgs = new Set(stdout.split('\n').map(s => s.trim()).filter(Boolean));
         appendToOutput(`[TARGET] Loaded ${blPkgs.size} blacklisted entries`);
         for (const app of apps) {
@@ -336,7 +336,7 @@ export async function openTargetAppsManager() {
 
       let blSet = new Set<string>();
       if (mode === 'blacklist') {
-        const { stdout } = await exec('cat /data/adb/Specter/blacklist.txt 2>/dev/null || echo ""');
+        const { stdout } = await exec('cat /data/adb/specter/blacklist.txt 2>/dev/null || echo ""');
         blSet = new Set(stdout.split('\n').map(s => s.trim()).filter(Boolean));
       }
 
@@ -530,8 +530,8 @@ export async function openTargetAppsManager() {
       try {
         const result = await exec(`printf '%s' ${shellEscape(content)} | base64 -w0`);
         const b64 = (result as any).stdout || '';
-        await exec(`mkdir -p /data/adb/Specter && printf '%s' "${b64}" | base64 -d > /data/adb/Specter/blacklist.txt`);
-        await exec('mkdir -p /data/adb/Specter && touch /data/adb/Specter/blacklist_enabled');
+        await exec(`mkdir -p /data/adb/specter && printf '%s' "${b64}" | base64 -d > /data/adb/specter/blacklist.txt`);
+        await exec('mkdir -p /data/adb/specter && touch /data/adb/specter/blacklist_enabled');
         appendToOutput(`[TARGET] Wrote ${bl.length} entries to blacklist.txt`);
         showToast(t('toast_blacklist_saved', 'Blacklist saved'), { icon: 'check_circle', type: 'success' as any, autoCloseDelay: 2500 });
       } catch (e) {

@@ -75,12 +75,10 @@ for entry in $FIXED_TARGETS; do
   _count=$((_count + 1))
 done
 
-for flag in "-3" "-s"; do
-  pkgs=$(pm list packages "$flag" 2>/dev/null) || {
-    log "TARGET" "Warning: Failed to list packages (flag $flag)"
-    continue
-  }
-  [ -z "$pkgs" ] && continue
+pkgs=$(pm list packages -3 2>/dev/null) || {
+  log "TARGET" "Warning: Failed to list packages"
+}
+if [ -n "$pkgs" ]; then
   echo "$pkgs" | cut -d ":" -f 2 > "$TEMP_PKGS"
   if [ -f "$SPECTER_DIR/blacklist_enabled" ] && [ -s "$BLACKLIST" ]; then
     if grep -Fvxf "$BLACKLIST" "$TEMP_PKGS" > "${TEMP_PKGS}.filtered" 2>/dev/null; then
@@ -122,7 +120,7 @@ for flag in "-3" "-s"; do
     _count=$((_count + 1))
   done < "$TEMP_PKGS"
   rm -f "$TEMP_PKGS" "${TEMP_PKGS}.filtered"
-done
+fi
 
 sort -u "$_TMP_TARGET" -o "$_TMP_TARGET"
 

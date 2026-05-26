@@ -105,7 +105,7 @@ const MOCK_APP_CATALOG: Record<string, string> = {
   'com.google.android.inputmethod.latin': 'Gboard',
 };
 
-const APP_LABELS_CACHE_PATH = '/data/adb/Specter/app_labels.json';
+const APP_LABELS_CACHE_PATH = '/data/adb/specter/app_labels.json';
 
 if (typeof window.ksu === 'undefined') {
   const ksuMock = {

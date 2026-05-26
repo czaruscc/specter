@@ -98,7 +98,7 @@ detect_root_solution() {
     fi
 }
 
-SPECTER_DIR="/data/adb/Specter"
+SPECTER_DIR="/data/adb/specter"
 GMS_PROPS_FILE="/data/system/gms_certified_props.json"
 GOOGLE_REVOCATION_URL="${GOOGLE_REVOCATION_URL:-https://android.googleapis.com/attestation/status?encrypted=0}"
 PERSIST_RESTORE_FILE="$SPECTER_DIR/persist_backup.txt"
@@ -473,7 +473,7 @@ disable_bootloader_spoofer() {
   fi
 }
 
-CONFLICT_BACKUP_FILE="/data/adb/Specter/conflict_backups.txt"
+CONFLICT_BACKUP_FILE="$SPECTER_DIR/conflict_backups.txt"
 
 _conflict_registry() { cat "$MODDIR/config/conflicts.txt" 2>/dev/null || true; }
 
