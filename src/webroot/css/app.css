@@ -10,6 +10,13 @@ body {
   user-select: none;
   -webkit-touch-callout: none;
 }
+html:has(md-dialog[open]),
+body:has(md-dialog[open]) {
+  overflow: hidden !important;
+}
+body:has(md-dialog[open]) *:not(md-dialog):not(md-dialog *) {
+  overflow: hidden !important;
+}
 
 input, textarea, [contenteditable="true"] {
   -webkit-user-select: text;
@@ -866,6 +873,11 @@ md-divider.settings-divider {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   box-sizing: border-box;
+  transition: box-shadow 0.2s ease;
+}
+
+.nav-bar--ring {
+  box-shadow: 0 0 0 3px #ffffff, 0 4px 20px rgba(0, 0, 0, 0.25) !important;
 }
 
 [dir="rtl"] .nav-bar {
@@ -1557,8 +1569,17 @@ md-filled-tonal-button {
   -webkit-overflow-scrolling: touch;
 }
 
-.ta-filters::-webkit-scrollbar {
-  display: none;
+html,
+body,
+* {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari and Opera */
 }
 
 .ta-list {
