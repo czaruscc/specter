@@ -594,6 +594,7 @@ section:not([hidden]) {
   flex-direction: column;
   gap: 2px;
   flex: 1;
+  min-width: 0;
 }
 
 .list-item--toggle .spacer {
@@ -625,7 +626,7 @@ section:not([hidden]) {
 }
 
 .spacer {
-  flex: 1;
+  margin-left: auto;
 }
 
 .action-spinner {
@@ -1947,11 +1948,9 @@ md-filled-tonal-button {
 }
 
 .kb-hero-provider-version {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 0.9375rem;
+  font-size: 1.125rem;
   font-weight: 600;
   color: var(--md-sys-color-primary);
-  letter-spacing: 0.3px;
 }
 
 .kb-hero-provider-version--neutral {

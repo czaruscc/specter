@@ -35,7 +35,7 @@ CF_EOF
       [ -z "$_kb_src" ] && [ "$(cfg_get 'kb_private' 'false')" = "true" ] && _kb_src="Private"
 
       _apps=$(wc -l < "$TARGET_TXT" 2>/dev/null || echo 0)
-      _patch=$(grep '^boot=' "$SECURITY_PATCH_FILE" 2>/dev/null | cut -d= -f2) || true
+      _patch=$(grep -E '^(boot|all)=' "$SECURITY_PATCH_FILE" 2>/dev/null | cut -d= -f2) || true
       [ -z "$_patch" ] && _patch="-"
 
       if [ -f "$TARGET_FILE" ] || [ -f "$LOCKED_FILE" ]; then

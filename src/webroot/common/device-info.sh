@@ -19,7 +19,8 @@ _root_type="$ROOT_TYPE"
 
 # Security patch date, real system value + optional spoofed value
 _build_patch=$(getprop ro.build.version.security_patch 2>/dev/null || echo "")
-_patch_date=$(grep '^boot=' /data/adb/tricky_store/security_patch.txt 2>/dev/null | cut -d= -f2 || echo "")
+_patch_date=$(grep -E '^(boot|all)=' /data/adb/tricky_store/security_patch.txt 2>/dev/null | cut -d= -f2)
+[ -z "$_patch_date" ] && _patch_date="$_build_patch"
 
 # Flags
 _twrp="false"; [ -f "$SPECTER_DIR/twrp" ] && _twrp="true"

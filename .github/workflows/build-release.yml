@@ -59,13 +59,133 @@ jobs:
           cd Module
           zip -r "../Specter-${{ steps.version.outputs.version }}.zip" .
 
+      - name: Push module to Telegram channel
+        env:
+          MODULE_PATH: Specter-${{ steps.version.outputs.version }}.zip
+          MODULE_VERSION: ${{ steps.version.outputs.version }}
+          MODULE_VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${TELEGRAM_BOT_TOKEN}" ] || [ -z "${TELEGRAM_CHAT_ID}" ]; then
+            echo "Missing Telegram secrets. Configure TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in repo secrets." >&2
+            exit 0
+          fi
+
+          COMMIT_SUBJECT=$(git log -1 --pretty=%s)
+          COMMIT_AUTHOR=$(git log -1 --pretty=%an)
+          COMMIT_BODY=$(git log -1 --pretty=%b)
+          GIT_HASH=$(git rev-parse --short=8 HEAD)
+
+          caption=$(python3 - <<'PY'
+          import os
+
+          def escape(s):
+              return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
+
+          module_path = os.environ["MODULE_PATH"]
+          module_ver  = os.environ["MODULE_VERSION"]
+          module_vc   = os.environ["MODULE_VERSION_CODE"]
+          subject     = os.environ.get("COMMIT_SUBJECT","")
+          author      = os.environ.get("COMMIT_AUTHOR","")
+          body        = os.environ.get("COMMIT_BODY","")
+          git_hash    = os.environ.get("GIT_HASH","")
+          branch      = os.environ.get("GITHUB_REF_NAME","")
+          repo        = os.environ.get("GITHUB_REPOSITORY","")
+
+          summary = ""
+          paragraphs = []
+          cur = []
+          for line in body.splitlines():
+              line = line.strip()
+              if not line:
+                  if cur:
+                      paragraphs.append(" ".join(cur))
+                      cur = []
+                  continue
+              cur.append(line)
+          if cur:
+              paragraphs.append(" ".join(cur))
+          if paragraphs:
+              summary = paragraphs[0]
+
+          lines = [
+              f"Version: <b>{escape(module_ver)} ({escape(module_vc)})</b>",
+              f"Module: <b>{escape(module_path)}</b>",
+              "Commit:",
+              f"<pre>{escape(subject)}</pre>",
+          ]
+          if summary:
+              lines.insert(4, f"<pre>{escape(summary)}</pre>")
+          lines += [
+              f"Author: <b>{escape(author)}</b>",
+              f"Branch: <b>{escape(branch)}@{escape(git_hash)}</b>",
+              f"Repo: <b>{escape(repo)}</b>",
+          ]
+
+          caption = "\n".join(lines)
+          cap_len = len(caption)
+          if cap_len > 1024:
+              excess = cap_len - 1024
+              if summary:
+                  trim = max(0, len(summary) - excess - 3)
+                  cap = caption.replace(summary, summary[:trim].rstrip() + "..." if trim > 3 else "")
+                  if len(cap) <= 1024:
+                      caption = cap
+              if len(caption) > 1024:
+                  caption = caption[:1021].rstrip() + "..."
+          print(caption)
+          PY
+          )
+
+          response_file=$(mktemp)
+          http_code=$(curl --silent --show-error --output "${response_file}" --write-out "%{http_code}" \
+            -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+            -F "chat_id=${TELEGRAM_CHAT_ID}" \
+            -F "document=@${MODULE_PATH}" \
+            -F "parse_mode=HTML" \
+            --form-string "caption=${caption}")
+
+          if [ "${http_code}" != "200" ]; then
+            echo "Telegram API returned HTTP ${http_code}." >&2
+            cat "${response_file}" >&2
+            exit 1
+          fi
+
+          message_id=$(python3 -c "
+          import json,sys
+          r=json.load(open('${response_file}'))
+          if not r.get('ok'): sys.exit(r.get('description','API error'))
+          print(r['result']['message_id'])
+          ")
+          echo "Telegram message_id: ${message_id}"
+
+      - name: Extract current release notes
+        run: |
+          python3 - <<'PY'
+          import re, sys
+          ver = "${{ steps.version.outputs.version }}"
+          with open("changelog.md") as f:
+              content = f.read()
+          pattern = re.compile(rf'^(# {re.escape(ver)}\s*.*?)(?=^# v|\Z)', re.MULTILINE | re.DOTALL)
+          match = pattern.search(content)
+          if match:
+              with open("release-notes.md", "w") as out:
+                  out.write(match.group(1).strip() + "\n")
+          else:
+              print(f"Section not found for version {ver}", file=sys.stderr)
+              sys.exit(1)
+          PY
+
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ steps.version.outputs.version }}" \
             --title "Specter ${{ steps.version.outputs.version }}" \
-            --notes-file changelog.md \
+            --notes-file release-notes.md \
             "Specter-${{ steps.version.outputs.version }}.zip"
 
       - name: Update update.json

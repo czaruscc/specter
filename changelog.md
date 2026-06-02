@@ -1,3 +1,56 @@
+# v1.4.4
+
+## New
+- ADB Disabler - disable USB debugging, developer options, and OEM unlock at boot
+- GMS sub-toggles: force-stop vs clear data, configurable per action
+- Interactive WebUI dialogs for ADB Disabler, Boot Hardening, ROM Fingerprint, Prop Handler, GMS
+- Conflict resolution UI with live toggle switching
+- Security patch now fetches real date from source.android.com, outputs all=YYYY-MM-DD format
+- target.sh --merge mode (incremental add, preserves existing target.txt)
+- Long-press nav ring and back popup intercept in WebUI navigation
+- Per-feature logging to $SPECTER_DIR/log/ at boot
+
+## Changed
+- Boot state props, build spoofing, and suspicious props cleanup consolidated into boot_state_props.sh
+- boot_core.sh runs disable_bootloader_spoofer at boot (was only in cleanup action)
+- Background daemon loops use PID files for clean lifecycle management
+- Security patch WebUI fallback: shows build_patch when spoofed value missing
+- TEE detection uses A/B slot suffix for vbmeta device; zero-hash treated as unavailable
+- HMA config download tries busybox wget first, falls back to download()
+- cleanup.sh now clears log buffers, ANR traces, kernel debug; removed remote control app data
+- pif.sh detects module type from module.prop instead of probing for script files
+- Installed keybox target replaces previous if different (with backup)
+
+## Removed
+- bootloader_spoofer.sh and suspicious_props.sh (consolidated into other features)
+- PIHook detection from rom_spoof_cleanup.sh and cleanup.sh
+- Remote control app data cleanup, delayed boot spoofing loop, duplicate boot hash file
+- Unused full_integrity and root_hide pipelines
+
+## Refactored
+- Monolithic common.sh split into modular libs: log.sh, util.sh, network.sh, detect.sh, paths.sh, props.sh, keybox.sh, conflicts.sh
+- target_common.sh created for shared target generation logic (TEESimulator, blacklist, customize.txt, TEE status)
+- Action pipeline now uses orchestrator.sh with toggle: prefix gating per step
+- target_merge.sh is now a thin wrapper around target.sh --merge
+
+## Installer
+- Rewritten _vol() with live countdown and interactive Vol- toggle
+- Merged keybox + target prompts into single "Run full setup?" prompt
+- Keybox installation delegates to features/keybox.sh
+
+## Bug Fixes
+- Fixed sp_persist() reading original value before writing - prevented HyperOS bootloops
+- Fixed block_rom_spoof_engines() backing up all pixelprops before deletion
+- Fixed WebUI-triggered features escaping KSU/APatch mount namespace via nsenter -t 1 -m
+- Fixed resetprop -w polling interval and sleep timing in service.sh
+- Fixed A/B slot suffix handling in vbmeta.sh and tee.sh
+- Fixed GMS targets in FIXED_TARGETS; PIF toggle consistency; adb_disabler mtp fallback
+- Fixed equalize sub-toggle width in dialog list items
+- Fixed security patch WebUI showing placeholder - fall back to ro.build.version.security_patch when no spoofed value
+- Fixed list-item-content description text wrapping with min-width: 0 and spacer margin-left: auto
+- Fixed keybox_info.sh JSON validity for empty private values and softbanned status
+- Fixed remove set -e from target.sh, gms.sh, orchestrator.sh for mksh compatibility
+
 # v1.4.3
 
 ## Home Page Redesign

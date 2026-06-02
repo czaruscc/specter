@@ -133,6 +133,7 @@ case "${1}" in
         [ -z "$pkg" ] && continue
         _suffix=""
         _compute_suffix "$pkg"
+        echo "${pkg}${_suffix}" >> "$_TMP_TARGET"
         _count=$((_count + 1))
       done < "$TEMP_PKGS"
       rm -f "$TEMP_PKGS" "${TEMP_PKGS}.filtered"

@@ -102,7 +102,7 @@ function applySecurityPatch(data: InfoJson) {
   const dateEl = document.getElementById('sp-date');
   const pifEl = document.getElementById('sp-pif');
   if (!dateEl) return;
-  dateEl.textContent = data.security_patch || '—';
+  dateEl.textContent = data.security_patch || data.build_patch || '—';
   if (pifEl) pifEl.textContent = data.pif_model || '—';
 }
 

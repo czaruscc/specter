@@ -2,24 +2,58 @@
 # shellcheck disable=SC2034
 MODDIR="$MODPATH"
 . "$MODPATH/lib/common.sh"
-. "$MODPATH/lib/urls.sh"
 . "$MODPATH/lib/paths.sh"
 . "$MODPATH/lib/config_env.sh"
 
 _vol() {
-    _vt="${1:-5}" _vw=0
-    while [ "$_vw" -lt "$_vt" ]; do
-        _vk=$(timeout 1 getevent -qlc 1 2>/dev/null)
+    _vt="${1:-5}"
+    _start=$(date +%s)
+    _counting=1
+    _current=0
+    _printed=-1
+
+    ui_print ">> Yes [$_vt]"
+    _printed=$_vt
+
+    while true; do
+        _now=$(date +%s)
+        _elapsed=$((_now - _start))
+
+        if [ "$_counting" -eq 1 ] && [ "$_elapsed" -ge "$_vt" ]; then
+            unset _vt _start _counting _current _printed _now _elapsed _vk _remaining
+            return 0
+        fi
+
+        _vk=$(timeout 1 getevent -qlc 1 2>/dev/null) 2>/dev/null
         if [ -n "$_vk" ]; then
             case "$_vk" in
-                *KEY_VOLUMEUP*)   unset _vt _vw _vk; return 0 ;;
-                *KEY_VOLUMEDOWN*) unset _vt _vw _vk; return 1 ;;
+                *KEY_VOLUMEUP*)
+                    unset _vt _start _counting _current _printed _now _elapsed _vk _remaining
+                    return $_current
+                    ;;
+                *KEY_VOLUMEDOWN*)
+                    _counting=0
+                    _current=$((1 - _current))
+                    if [ "$_current" -eq 0 ]; then
+                        ui_print ">> Yes"
+                    else
+                        ui_print ">> No"
+                    fi
+                    ;;
             esac
         fi
-        _vw=$((_vw + 1))
+
+        if [ "$_counting" -eq 1 ]; then
+            _remaining=$((_vt - _elapsed))
+            [ "$_remaining" -lt 0 ] && _remaining=0
+            if [ "$_remaining" -ne "$_printed" ] 2>/dev/null; then
+                ui_print ">> Yes [$_remaining]"
+                _printed=$_remaining
+            fi
+        fi
+
+        sleep 0.3
     done
-    unset _vt _vw _vk
-    return 2
 }
 
 ui_print ""
@@ -68,11 +102,8 @@ esac
 unset _tee
 
 if [ "$_ts_found" = true ]; then
-  DECODE_FILE="$TRICKY_DIR/keybox_decode"
-  TEMP_FILE="$MODPATH/keybox.tmp"
-
   ui_print ""
-  ui_print " Install a keybox?"
+  ui_print " Run full setup (keybox + target)?"
   ui_print "  Vol Up   = Yes (5s)"
   ui_print "  Vol Down = No"
   ui_print ""
@@ -80,76 +111,27 @@ if [ "$_ts_found" = true ]; then
   _vol; _choice=$?
   case $_choice in
     1)
-      ui_print "- Skipping keybox installation."
-      ui_print "- Install from the action button or WebUI later."
-      rm -f "$TEMP_FILE" "$DECODE_FILE" 2>/dev/null
+      ui_print "- Skipping full setup."
       ;;
     *)
       ui_print "- Installing keybox..."
-      if check_network; then
-        ( download "$KEYBOX_URL" > "$TEMP_FILE" ) & _dl_pid=$!
-        _dl_i=0; while kill -0 $_dl_pid 2>/dev/null && [ $_dl_i -lt 30 ]; do sleep 1; _dl_i=$((_dl_i + 1)); done
-        kill $_dl_pid 2>/dev/null || true; wait $_dl_pid 2>/dev/null || true
-
-        if [ ! -f "$TEMP_FILE" ] || [ ! -s "$TEMP_FILE" ]; then
-            ui_print "- Error: Keybox download failed. You can upload a keybox manually via the WebUI."
-            rm -f "$TEMP_FILE"
-        else
-            mkdir -p "$TRICKY_DIR"
-
-            if ! decode_keybox_blob "$TEMP_FILE" "$DECODE_FILE" 2>/dev/null; then
-                ui_print "- Error: Downloaded keybox is corrupted or invalid. Try again later."
-                rm -f "$TEMP_FILE"
-            else
-                if [ -f "$TARGET_FILE" ]; then
-                    if cmp -s "$TARGET_FILE" "$DECODE_FILE"; then
-                        ui_print "- Current keybox is already up to date. No changes needed."
-                        rm -f "$TEMP_FILE" "$DECODE_FILE"
-                    else
-                        ui_print "- Backing up previous keybox..."
-                        cp "$TARGET_FILE" "$BACKUP_FILE"
-                        mv "$DECODE_FILE" "$TARGET_FILE"
-                        rm -f "$TEMP_FILE"
-                        ui_print "- Keybox installed successfully"
-                    fi
-                else
-                    ui_print "- No keybox found! Creating a new one..."
-                    mv "$DECODE_FILE" "$TARGET_FILE"
-                    rm -f "$TEMP_FILE"
-                    ui_print "- Keybox installed successfully"
-                fi
-            fi
+      if ! sh "$MODPATH/features/keybox.sh"; then
+        if [ ! -f "$TARGET_FILE" ]; then
+          ui_print "- Error: Keybox installation failed. Upload manually via WebUI."
         fi
+      fi
+
+      ui_print "- Generating target.txt..."
+      if ! sh "$MODPATH/features/target.sh"; then
+        ui_print "- target.txt generation failed"
       else
-        ui_print "- No internet connection detected. Skipping keybox download."
-        ui_print "- You can download a keybox later from the action button or WebUI."
+        ui_print "- target.txt generated"
       fi
       ;;
   esac
   unset _choice
 fi
 unset _ts_found
-
-ui_print ""
-ui_print " Generate target.txt?"
-ui_print "  Vol Up   = Yes (5s)"
-ui_print "  Vol Down = No"
-ui_print ""
-_vol; _tg_choice=$?
-case $_tg_choice in
-  1)
-    ui_print "- Skipping target.txt."
-    ;;
-  *)
-    ui_print "- Generating target.txt..."
-    if ! sh "$MODPATH/features/target.sh"; then
-      ui_print "- target.txt generation failed"
-    else
-      ui_print "- target.txt generated"
-    fi
-    ;;
-esac
-unset _tg_choice
 
 mkdir -p "$MODPATH/webroot/json"
 

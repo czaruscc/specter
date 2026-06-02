@@ -11,7 +11,7 @@ if [ "$(cfg_get toggle_prop_handler 1)" != "0" ]; then
   [ "$(cfg_get spoof_build_props 1)" != "0" ] && spoof_build_props
 fi
 
-for _bf in recovery boot_hardening lsposed security_patch adb_disabler rom_fingerprint vbmeta; do
+for _bf in recovery boot_hardening lsposed adb_disabler rom_fingerprint vbmeta; do
   case "$_bf" in *[!a-zA-Z0-9_-]*) log "BOOT" "Skipping invalid feature: $_bf"; continue ;; esac
   _bf_default=1
   case "$_bf" in adb_disabler|rom_fingerprint) _bf_default=0 ;; esac

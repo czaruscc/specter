@@ -24,7 +24,7 @@ while IFS= read -r line; do
         ;;
     esac
 
-    [ -z "$_toggle" ] || [ "$(cfg_get "$_toggle" 0)" != "0" ] || continue
+    [ -z "$_toggle" ] || [ "$(cfg_get "$_toggle" 1)" != "0" ] || continue
     unset _toggle
 
     # Parse feature name and optional args
@@ -46,6 +46,6 @@ while IFS= read -r line; do
     log "ORCH" "Running: $feature $_args"
     # shellcheck disable=SC2086
     if ! sh "$FEATURE_PATH" $_args; then
-        die "Pipeline aborted: $feature failed"
+        log "ORCH" "Warning: $feature failed -- continuing"
     fi
 done < "$PIPELINE_FILE"
