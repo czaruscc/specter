@@ -153,7 +153,7 @@ jobs:
           if [ "${http_code}" != "200" ]; then
             echo "Telegram API returned HTTP ${http_code}." >&2
             cat "${response_file}" >&2
-            exit 1
+            exit 0
           fi
 
           message_id=$(python3 -c "
