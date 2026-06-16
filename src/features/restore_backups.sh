@@ -6,8 +6,6 @@ MODDIR=${0%/*}
 
 log "RESTORE" "Start"
 
-BACKUP_DIR="$SPECTER_DIR/backup"
-
 if [ ! -d "$BACKUP_DIR" ]; then
   log "RESTORE" "No backup directory found"
   echo "No backups found to restore."
