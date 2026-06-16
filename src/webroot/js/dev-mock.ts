@@ -107,7 +107,7 @@ const MOCK_APP_CATALOG: Record<string, string> = {
   'com.google.android.inputmethod.latin': 'Gboard',
 };
 
-const APP_LABELS_CACHE_PATH = '/data/adb/Specter/app_labels.json';
+const APP_LABELS_CACHE_PATH = '/data/adb/specter/app_labels.json';
 
 if (typeof window.ksu === 'undefined') {
   const ksuMock = {
@@ -165,7 +165,7 @@ if (typeof window.ksu === 'undefined') {
         if (!r.ok || !ct.includes('json')) throw new Error('not found');
         return r;
       }).catch(() =>
-        Promise.resolve(new Response(JSON.stringify({ MODDIR: '/data/adb/modules/Specter' }), {
+        Promise.resolve(new Response(JSON.stringify({ MODDIR: '/data/adb/modules/specter', SPECTER_DIR: '/data/adb/specter' }), {
           status: 200, headers: { 'Content-Type': 'application/json' },
         }))
       );
@@ -200,7 +200,7 @@ if (typeof window.ksu === 'undefined') {
       }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
     }
 
-    if (u.includes('rawbin.netlify.app/key/catalog')) {
+    if (u.includes('rawbin.dpejoh.com/catalog')) {
       return Promise.resolve(new Response(JSON.stringify({
         entries: [
           { source: "droidwin", version: "1", text: "v1", serial: "12345", revoked: false, softbanned: false, last_checked: new Date().toISOString(), timestamp: new Date().toISOString() },
@@ -212,13 +212,7 @@ if (typeof window.ksu === 'undefined') {
       }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
     }
 
-    if (u.includes('rawbin.netlify.app/apps/version')) {
-      return Promise.resolve(new Response(JSON.stringify({ version: 1 }), {
-        status: 200, headers: { 'Content-Type': 'application/json' },
-      }));
-    }
-
-    if (u.includes('rawbin.netlify.app/apps')) {
+    if (u.includes('rawbin.dpejoh.com/apps')) {
       return Promise.resolve(new Response(JSON.stringify(MOCK_APP_CATALOG), {
         status: 200, headers: { 'Content-Type': 'application/json' },
       }));

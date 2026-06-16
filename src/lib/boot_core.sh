@@ -40,7 +40,7 @@ log "BOOT" "Cleaning bootloader spoofer"
 disable_bootloader_spoofer 2>/dev/null || true
 
 if [ -f "$SPECTER_DIR/tee_reported" ]; then
-  ( sh "$MODDIR/features/tee.sh" >/dev/null 2>&1 ) &
+  sh "$MODDIR/features/tee.sh" >"$SPECTER_DIR/log/boot_tee.log" 2>&1 || log "BOOT" "TEE check failed"
   rm -f "$SPECTER_DIR/tee_reported"
 fi
 
@@ -49,7 +49,13 @@ if [ -f "$SPECTER_DIR/rom_spoof_reported" ]; then
   rm -f "$SPECTER_DIR/rom_spoof_reported"
 fi
 
-(sleep 60; sh "$MODDIR/features/keybox_info.sh") >/dev/null 2>&1 &
+# One-shot first-boot setup (keybox install + target generation)
+if [ -f "$MODDIR/.first_boot_pending" ]; then
+  log "BOOT" "First-boot setup pending, running..."
+  sh "$MODDIR/features/first_boot_setup.sh" >"$SPECTER_DIR/log/first_boot_setup.log" 2>&1 || log "BOOT" "First-boot setup failed (see log/first_boot_setup.log)"
+  rm -f "$MODDIR/.first_boot_pending"
+  log "BOOT" "First-boot setup complete"
+fi
 
 . "$MODDIR/lib/desc.sh"
 refresh_module_description

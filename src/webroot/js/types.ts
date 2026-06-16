@@ -23,6 +23,7 @@ export interface ChildProcess {
 
 export interface ModulePaths {
   MODDIR: string;
+  SPECTER_DIR?: string;
 }
 
 export interface InfoJson {

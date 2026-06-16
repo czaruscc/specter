@@ -4,15 +4,13 @@ MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
 . "$MODDIR/../lib/paths.sh"
 . "$MODDIR/../lib/vbmeta.sh"
-
+. "$MODDIR/../lib/config_env.sh"
 APK="$MODDIR/../apk/specter.apk"
 PACKAGE="com.dpejoh.specter"
 
 log "TEE" "Start"
 
 [ ! -f "$APK" ] && { log "TEE" "APK not found: $APK"; exit 1; }
-
-pm install -r "$APK" 2>/dev/null || { log "TEE" "APK install failed"; exit 1; }
 
 for _i in 1 2 3 4 5; do
   _tee=$(content query --uri content://$PACKAGE/check 2>/dev/null \
@@ -38,7 +36,11 @@ unset _tee_slot _tee_vbmeta_dev
 _publish_hash() {
   _h="$1" _s="$2"
   echo "$_h" > "$TEE_HASH"
-  echo "$_h" > "$VBMETA_DIGEST"
+  _custom_hash=$(cfg_get custom_boot_hash "")
+  if [ -z "$_custom_hash" ]; then
+    echo "$_h" > "$VBMETA_DIGEST"
+  fi
+  unset _custom_hash
   log "TEE" "Hash: $_h ($_s)"
 }
 
@@ -64,7 +66,5 @@ elif [ -n "$_partition_hash" ]; then
 else
   log "TEE" "Hash: unavailable (TEE and partition both failed)"
 fi
-
-rm -f "$APK"
 
 log "TEE" "Done"

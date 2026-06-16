@@ -9,8 +9,8 @@ REQUIRED="1.3.0"
 
 log "ZYGISK_NEXT" "Start"
 
-ZYNEXT_DIR="/data/adb/modules/zygisksu"
-[ ! -d "$ZYNEXT_DIR" ] && ZYNEXT_DIR="/data/adb/modules_update/zygisksu"
+ZYNEXT_DIR="$MODULES_BASE/zygisksu"
+[ ! -d "$ZYNEXT_DIR" ] && ZYNEXT_DIR="${MODULES_BASE}_update/zygisksu"
 
 ZYNEXT_PROPFILE="$ZYNEXT_DIR/module.prop"
 SCRIPT_FILE="$ZYNEXT_DIR/bin/zygiskd"

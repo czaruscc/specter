@@ -6,7 +6,7 @@ MODDIR=${0%/*}
 
 log "KEYBOX_INFO" "Start"
 
-KEYBOX_FILE="/data/adb/tricky_store/keybox.xml"
+KEYBOX_FILE="$TRICKY_DIR/keybox.xml"
 INFO_PATH="$MODDIR/../webroot/json/keybox_info.json"
 
 ensure_dir "$(dirname "$INFO_PATH")"

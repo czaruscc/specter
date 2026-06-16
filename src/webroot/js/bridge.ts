@@ -37,6 +37,11 @@ export function getModuleDir(): string | null {
   return MODULE?.MODDIR || null;
 }
 
+/** Return the Specter data directory, or null if not yet initialised. */
+export function getDataDir(): string | null {
+  return MODULE?.SPECTER_DIR || null;
+}
+
 function scriptDir(type: string): string {
   const dirs: Record<string, string> = { feature: 'features', common: 'webroot/common' };
   const sub = dirs[type] || 'features';

@@ -6,7 +6,7 @@ refresh_module_description() {
   # Compute new description
   _new_desc=""
 
-  if [ ! -d "/data/adb/modules/tricky_store" ] && [ ! -d "/data/adb/modules_update/tricky_store" ]; then
+  if [ ! -d "$MODULES_BASE/tricky_store" ] && [ ! -d "${MODULES_BASE}_update/tricky_store" ]; then
     _new_desc="🚨 Tricky Store not installed"
   else
     # Check for aggressive conflicts

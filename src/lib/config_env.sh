@@ -1,7 +1,7 @@
 # shellcheck shell=sh
 cfg_get() {
     _cg_key="$1" _cg_default="$2"
-    _cg_val=$(cat "$CONFIG_DIR/$_cg_key.val" 2>/dev/null)
+    _cg_val=$(cat "$CONFIG_DIR/$_cg_key.val" 2>/dev/null || true)
     printf '%s' "${_cg_val:-$_cg_default}"
     unset _cg_key _cg_default _cg_val
 }

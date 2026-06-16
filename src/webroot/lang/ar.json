@@ -270,5 +270,7 @@
   "auto_target_interval_aria": "Interval in seconds",
   "kb_refresh_btn": "Refresh",
   "clear_history_btn": "Clear history",
-  "home_events_initial": "0 events"
+  "home_events_initial": "0 events",
+  "restore_backups_title": "استعادة النسخ الاحتياطية الأصلية",
+  "restore_backups_desc": "استعادة ملفات Tricky Store الأصلية من النسخة الاحتياطية للإقلاع الأول"
 }

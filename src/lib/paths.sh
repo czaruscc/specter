@@ -1,6 +1,15 @@
 # shellcheck shell=sh disable=SC2034
-# Tricky Store paths
+
+# Base directories
+MODULES_BASE="/data/adb/modules"
+SPECTER_DIR="/data/adb/specter"
 TRICKY_DIR="/data/adb/tricky_store"
+
+# Module paths (other modules under MODULES_BASE)
+PIF_DIR="$MODULES_BASE/playintegrityfix"
+ZYNEXT_DIR="$MODULES_BASE/zygisksu"
+
+# Tricky Store paths
 TARGET_FILE="$TRICKY_DIR/keybox.xml"
 BACKUP_FILE="$TRICKY_DIR/keybox.xml.bak"
 LOCKED_FILE="$TRICKY_DIR/locked.xml"
@@ -12,9 +21,11 @@ TEE_HASH="$SPECTER_DIR/tee_hash"
 VBMETA_DIGEST="$SPECTER_DIR/vbmeta_digest"
 
 # Other system paths
-SPECTER_DIR="/data/adb/Specter"
 HMA_DIR="/data/user/0/org.frknkrc44.hma_oss/files"
 HMA_FILE="$HMA_DIR/config.json"
 GMS_PROPS_FILE="/data/system/gms_certified_props.json"
+
+# Backup directory (first-boot snapshots of original Tricky Store files)
+BACKUP_DIR="$SPECTER_DIR/backup"
 
 # BBIN, CONFIG_DIR, MIGRATION_MARKER set in common.sh

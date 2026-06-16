@@ -1,0 +1,54 @@
+#!/system/bin/sh
+set -e
+MODDIR=${0%/*}
+. "$MODDIR/../lib/common.sh"
+. "$MODDIR/../lib/paths.sh"
+. "$MODDIR/../lib/config_env.sh"
+
+log "RESTORE" "Start"
+
+BACKUP_DIR="$SPECTER_DIR/backup"
+
+if [ ! -d "$BACKUP_DIR" ]; then
+  log "RESTORE" "No backup directory found"
+  echo "No backups found to restore."
+  exit 1
+fi
+
+_restored=0
+
+if [ -f "$BACKUP_DIR/keybox.xml.bak" ]; then
+  cp "$BACKUP_DIR/keybox.xml.bak" "$TARGET_FILE"
+  log "RESTORE" "Restored keybox.xml"
+  _restored=$((_restored + 1))
+fi
+
+if [ -f "$BACKUP_DIR/target.txt.bak" ]; then
+  cp "$BACKUP_DIR/target.txt.bak" "$TARGET_TXT"
+  log "RESTORE" "Restored target.txt"
+  _restored=$((_restored + 1))
+fi
+
+if [ -f "$BACKUP_DIR/locked.xml.bak" ]; then
+  cp "$BACKUP_DIR/locked.xml.bak" "$LOCKED_FILE"
+  log "RESTORE" "Restored locked.xml"
+  _restored=$((_restored + 1))
+fi
+
+if [ -f "$BACKUP_DIR/security_patch.txt.bak" ]; then
+  cp "$BACKUP_DIR/security_patch.txt.bak" "$SECURITY_PATCH_FILE"
+  log "RESTORE" "Restored security_patch.txt"
+  _restored=$((_restored + 1))
+fi
+
+if [ "$_restored" -eq 0 ]; then
+  log "RESTORE" "No backup files found"
+  echo "No backup files found in $BACKUP_DIR"
+  exit 1
+fi
+
+log "RESTORE" "Restored $_restored files"
+echo "Restored $_restored files from backup."
+
+log "RESTORE" "Finish"
+exit 0

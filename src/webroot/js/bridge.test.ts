@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi, afterEach } from 'vitest'
-import { initBridge, exec, runScript, spawnScript, getModuleDir } from './bridge.js'
+import { initBridge, exec, runScript, spawnScript, getModuleDir, getDataDir } from './bridge.js'
 import type { KsuBridge } from './types.js'
 
 function mockKsu(overrides?: Partial<KsuBridge>) {
@@ -34,16 +34,23 @@ afterEach(() => {
 describe('initBridge', () => {
   it('fetches module_paths.json and sets MODULE', async () => {
     mockKsu()
-    mockFetchJson({ MODDIR: '/data/adb/modules/Specter' })
+    mockFetchJson({ MODDIR: '/data/adb/modules/specter' })
     await initBridge()
     expect(globalThis.fetch).toHaveBeenCalledWith('/json/module_paths.json')
   })
 
+  it('returns SPECTER_DIR from getDataDir', async () => {
+    mockKsu()
+    mockFetchJson({ MODDIR: '/data/adb/modules/specter', SPECTER_DIR: '/data/adb/specter' })
+    await initBridge()
+    expect(getDataDir()).toBe('/data/adb/specter')
+  })
+
   it('expands modules_update to modules in the path', async () => {
     mockKsu()
-    mockFetchJson({ MODDIR: '/data/adb/modules_update/Specter' })
+    mockFetchJson({ MODDIR: '/data/adb/modules_update/specter' })
     await initBridge()
-    expect(getModuleDir()).toBe('/data/adb/modules/Specter')
+    expect(getModuleDir()).toBe('/data/adb/modules/specter')
   })
 
   it('throws when no module path can be determined', async () => {
@@ -62,7 +69,7 @@ describe('exec', () => {
 
   it('invokes window.ksu.exec with the command', async () => {
     const ksu = mockKsu()
-    mockFetchJson({ MODDIR: '/data/adb/modules/Specter' })
+    mockFetchJson({ MODDIR: '/data/adb/modules/specter' })
     await initBridge()
     exec('echo hello')
     expect(ksu.exec).toHaveBeenCalledWith(
@@ -79,7 +86,7 @@ describe('exec', () => {
         cb(0, 'output text', '')
       },
     })
-    mockFetchJson({ MODDIR: '/data/adb/modules/Specter' })
+    mockFetchJson({ MODDIR: '/data/adb/modules/specter' })
     await initBridge()
     const result = await exec('test-cmd')
     expect(result).toEqual({ code: 0, stdout: 'output text', stderr: '' })
@@ -92,7 +99,7 @@ describe('exec', () => {
         cb(JSON.stringify({ result: 'parsed_value', stderr: '' }))
       },
     })
-    mockFetchJson({ MODDIR: '/data/adb/modules/Specter' })
+    mockFetchJson({ MODDIR: '/data/adb/modules/specter' })
     await initBridge()
     const result = await exec('json-cmd')
     expect(result.stdout).toBe('parsed_value')
@@ -107,11 +114,11 @@ describe('runScript', () => {
 
   it('invokes ksu.exec with sh script path', async () => {
     const ksu = mockKsu()
-    mockFetchJson({ MODDIR: '/data/adb/modules/Specter' })
+    mockFetchJson({ MODDIR: '/data/adb/modules/specter' })
     await initBridge()
     runScript('test.sh', 'feature')
     expect(ksu.exec).toHaveBeenCalledWith(
-      "sh '/data/adb/modules/Specter/features/test.sh'",
+      "sh '/data/adb/modules/specter/features/test.sh'",
       '{}',
       expect.stringMatching(/^__sp_/)
     )
@@ -124,7 +131,7 @@ describe('runScript', () => {
         cb(0, 'done', '')
       },
     })
-    mockFetchJson({ MODDIR: '/data/adb/modules/Specter' })
+    mockFetchJson({ MODDIR: '/data/adb/modules/specter' })
     await initBridge()
     const result = await runScript('ok.sh')
     expect(result).toEqual({ success: true, output: 'done', rawOutput: 'done' })
@@ -137,7 +144,7 @@ describe('runScript', () => {
         cb(1, 'fail output', 'stderr here')
       },
     })
-    mockFetchJson({ MODDIR: '/data/adb/modules/Specter' })
+    mockFetchJson({ MODDIR: '/data/adb/modules/specter' })
     await initBridge()
     const result = await runScript('fail.sh')
     expect(result.success).toBe(false)
@@ -151,7 +158,7 @@ describe('runScript', () => {
         cb(JSON.stringify({ success: false, stdout: 'error from script' }))
       },
     })
-    mockFetchJson({ MODDIR: '/data/adb/modules/Specter' })
+    mockFetchJson({ MODDIR: '/data/adb/modules/specter' })
     await initBridge()
     await expect(runScript('fail-json.sh')).rejects.toThrow('Script execution failed')
   })
@@ -172,7 +179,7 @@ describe('spawnScript', () => {
     mockKsu()
     // Don't provide spawn so spawnScript falls back to exec
     delete (window.ksu as any).spawn
-    mockFetchJson({ MODDIR: '/data/adb/modules/Specter' })
+    mockFetchJson({ MODDIR: '/data/adb/modules/specter' })
     const ksu = window.ksu!
     ksu.exec = vi.fn((_cmd, _opts, cbName) => {
       const cb = (window as any)[cbName]
