@@ -152,8 +152,8 @@ export function wireActions() {
         } else {
           await runSimpleAction(scriptName);
         }
-      } catch (_err) {
-        console.warn('Action error:', _err);
+      } catch {
+        console.warn('Action error:');
       } finally {
         (el as HTMLButtonElement).disabled = false;
         spinner?.classList.add('hidden');

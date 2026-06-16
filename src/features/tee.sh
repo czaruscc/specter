@@ -2,7 +2,6 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/paths.sh"
 . "$MODDIR/../lib/vbmeta.sh"
 . "$MODDIR/../lib/config_env.sh"
 APK="$MODDIR/../apk/specter.apk"

@@ -2,13 +2,11 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/paths.sh"
 . "$MODDIR/../lib/urls.sh"
 . "$MODDIR/../lib/config_env.sh"
 
 log "FIRST_BOOT" "Start"
 
-BACKUP_DIR="$SPECTER_DIR/backup"
 ensure_dir "$BACKUP_DIR"
 
 log "FIRST_BOOT" "Backing up existing Tricky Store files"

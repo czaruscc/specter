@@ -48,7 +48,7 @@ function t(key: string, fallback: string): string {
   return getTranslation(key) || fallback;
 }
 
-function nextState(current: AppState, _mode: Mode): AppState {
+function nextState(current: AppState): AppState {
   const idx = BLACKLIST_STATE_ORDER.indexOf(current as BlacklistState);
   return BLACKLIST_STATE_ORDER[(idx + 1) % BLACKLIST_STATE_ORDER.length]!;
 }
@@ -463,7 +463,7 @@ export async function openTargetAppsManager() {
       circle.addEventListener('click', (e) => {
         e.stopPropagation();
         if (mode === 'blacklist') {
-          applyAppState(nextState(app.state, mode));
+          applyAppState(nextState(app.state));
         } else if (app.state === 'unchecked') {
           applyAppState('bare');
         } else {

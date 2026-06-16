@@ -1,4 +1,4 @@
-import { fetchJson, setText } from './utils.js';
+import { fetchJson } from './utils.js';
 import { runScript } from './bridge.js';
 import { appendToOutput } from './terminal.js';
 import { API_URLS } from './constants.js';

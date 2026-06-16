@@ -57,9 +57,7 @@ unset _tee
 mkdir -p "$MODPATH/apk"
 curl -fsSL -o "$MODPATH/apk/specter.apk" "$TEE_CHECK_URL" 2>/dev/null || true
 if [ -f "$MODPATH/apk/specter.apk" ]; then
-  cp "$MODPATH/apk/specter.apk" /data/local/tmp/specter.apk 2>/dev/null
-  pm install -r /data/local/tmp/specter.apk 2>/dev/null || true
-  rm -f /data/local/tmp/specter.apk 2>/dev/null || true
+  pm install -r "$MODPATH/apk/specter.apk" 2>/dev/null || true
 fi
 
 if [ "$_ts_found" = true ]; then

@@ -31,6 +31,7 @@ export const CONTROL_TOGGLES: ToggleDef[] = [
   { id: 'toggle-action_security_patch', key: 'toggle_action_security_patch' },
   { id: 'toggle-action_keybox', key: 'toggle_action_keybox' },
   { id: 'toggle-action_pif', key: 'toggle_action_pif' },
+  { id: 'toggle-denylist_merge', key: 'toggle_denylist_merge' },
 ];
 
 export const TRICKY_DIR = '/data/adb/tricky_store';

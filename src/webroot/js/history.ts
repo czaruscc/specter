@@ -44,10 +44,6 @@ export function getHistory(): HistoryEntry[] {
   } catch (e) { console.warn('Failed to parse history:', e); return []; }
 }
 
-export function getRecentEntries(count: number): HistoryEntry[] {
-  return getHistory().slice(0, count);
-}
-
 export function addEntry(scriptName: string, output: string) {
   if (typeof output !== 'string') output = String(output || '');
   if (!output.trim()) return;
@@ -225,7 +221,7 @@ export function renderActivityPreview() {
   }
 
   const VISIBLE_COUNT = 4;
-  const allEntries = getRecentEntries(240);
+  const allEntries = getHistory();
   const count = allEntries.length;
   if (countEl) countEl.textContent = `${count} ${t('home_events', 'events')}`;
 
