@@ -270,5 +270,17 @@
   "auto_target_interval_aria": "Interval in seconds",
   "kb_refresh_btn": "Refresh",
   "clear_history_btn": "Clear history",
-  "home_events_initial": "0 events"
+  "home_events_initial": "0 events",
+  "boot_hash_title": "Set Custom Boot Hash",
+  "boot_hash_desc": "Override vbmeta digest with a custom boot hash",
+  "boot_hash_dialog_title": "Custom Boot Hash",
+  "boot_hash_label": "Boot Hash (SHA256)",
+  "boot_hash_info": "Leave empty to use auto-computed boot hash. The hash is a 64-character hex string.",
+  "boot_hash_termux_hint": "To get your boot hash from TEE, install specter.apk and run in Termux:",
+  "boot_hash_invalid": "Invalid hash (must be 64 hex characters)",
+  "boot_hash_saved": "Custom boot hash saved",
+  "boot_hash_save_error": "Failed to save",
+  "boot_hash_cleared": "Custom boot hash cleared",
+  "restore_backups_title": "Restore Original Backups",
+  "restore_backups_desc": "Restores your original Tricky Store files from the first-boot backup"
 }

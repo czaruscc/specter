@@ -1,10 +1,8 @@
-import { exec } from './bridge.js';
+import { exec, getModuleDir } from './bridge.js';
 import { getTranslation } from './i18n.js';
 import { showToast } from './toast.js';
-import { defaultSecurityPatch } from './constants.js';
-import { getModuleDir } from './bridge.js';
+import { TRICKY_DIR, defaultSecurityPatch } from './constants.js';
 import { shellEscape } from './utils.js';
-
 const t = (key: string, fallback: string): string => getTranslation(key) || fallback;
 
 export function wireSecurityPatch() {
@@ -63,7 +61,7 @@ export function wireSecurityPatch() {
       }
       const content = `all=${val}`;
       try {
-        await exec(`cat > /data/adb/tricky_store/security_patch.txt << 'SEOF'\n${content}\nSEOF`);
+        await exec(`cat > ${TRICKY_DIR}/security_patch.txt << 'SEOF'\n${content}\nSEOF`);
         const moddir = getModuleDir();
         if (moddir) await exec(`sh ${moddir}/refresh_desc.sh`);
         showToast(t('sp_saved', 'Security patch date saved'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });

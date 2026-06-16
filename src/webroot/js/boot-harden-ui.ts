@@ -1,4 +1,4 @@
-import { cfgGet, cfgSet, cfgInvalidate } from './cfg.js';
+import { cfgGet, cfgSet } from './cfg.js';
 import { showToast } from './toast.js';
 import { getTranslation } from './i18n.js';
 
@@ -61,8 +61,6 @@ export function openBootHardenDialog() {
           const b = dialog.querySelector('#bh-bootmode') as MdSwitch;
           cfgSet('boot_hardening_selinux', s.selected ? '1' : '0');
           cfgSet('boot_hardening_bootmode', b.selected ? '1' : '0');
-          cfgInvalidate('boot_hardening_selinux');
-          cfgInvalidate('boot_hardening_bootmode');
           showToast(t('toast_success', 'Done'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
           dialog.close();
         } catch (e) {

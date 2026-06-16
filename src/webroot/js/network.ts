@@ -57,7 +57,7 @@ async function checkOnline(): Promise<boolean> {
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 800);
-      await fetch(endpoint, { signal: ctrl.signal, mode: 'no-cors' });
+      await fetch(endpoint, { signal: ctrl.signal });
       clearTimeout(timer);
       return true;
     } catch { /* try next endpoint */ }

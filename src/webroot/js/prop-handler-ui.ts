@@ -1,4 +1,4 @@
-import { cfgGet, cfgSet, cfgInvalidate } from './cfg.js';
+import { cfgGet, cfgSet } from './cfg.js';
 import { showToast } from './toast.js';
 import { getTranslation } from './i18n.js';
 
@@ -74,9 +74,6 @@ export function openPropHandlerDialog() {
               cfgSet('boot_state_props', s.selected ? '1' : '0');
               cfgSet('spoof_build_props', sp.selected ? '1' : '0');
               cfgSet('suspicious_props', sp2.selected ? '1' : '0');
-              cfgInvalidate('boot_state_props');
-              cfgInvalidate('spoof_build_props');
-              cfgInvalidate('suspicious_props');
               showToast(t('toast_success', 'Done'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
               dialog.close();
             } catch (e) {

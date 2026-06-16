@@ -37,7 +37,7 @@ async function confirmDestructive(friendlyName: string): Promise<boolean> {
   });
 }
 
-export async function runDevAction(scriptName: string, _item: HTMLElement, _spinner: HTMLElement | null) {
+export async function runDevAction(scriptName: string) {
   const lines: string[] = [];
   appendToOutput(`> ${scriptName}`);
   const dialog = document.createElement('md-dialog');
@@ -76,7 +76,7 @@ export async function runDevAction(scriptName: string, _item: HTMLElement, _spin
   });
 }
 
-export async function runSimpleAction(scriptName: string, _item: HTMLElement, _spinner: HTMLElement | null) {
+export async function runSimpleAction(scriptName: string) {
   const i18nKey = getFriendlyName(scriptName);
   const friendlyName = getTranslation(i18nKey) || i18nKey;
   const lines: string[] = [];
@@ -148,12 +148,12 @@ export function wireActions() {
       spinner?.classList.remove('hidden');
       try {
         if (isDevMode()) {
-          await runDevAction(scriptName, el, spinner);
+          await runDevAction(scriptName);
         } else {
-          await runSimpleAction(scriptName, el, spinner);
+          await runSimpleAction(scriptName);
         }
-      } catch (_err) {
-        console.warn('Action error:', _err);
+      } catch {
+        console.warn('Action error:');
       } finally {
         (el as HTMLButtonElement).disabled = false;
         spinner?.classList.add('hidden');

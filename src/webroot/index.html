@@ -173,26 +173,6 @@
 
 
 
-          <div class="info-grid--compact" hidden>
-            <md-filled-card class="info-card-mini" id="version-info-card">
-              <md-icon class="info-card-mini__icon" aria-hidden="true">info</md-icon>
-              <p class="info-card-mini__label" data-i18n="home_version">Module Version</p>
-              <p class="info-card-mini__value" id="version-info-value">—</p>
-            </md-filled-card>
-
-            <md-filled-card class="info-card-mini">
-              <md-icon class="info-card-mini__icon" aria-hidden="true">verified_user</md-icon>
-              <p class="info-card-mini__label" data-i18n="home_root">Root</p>
-              <p class="info-card-mini__value" id="root-value">—</p>
-            </md-filled-card>
-
-            <md-filled-card class="info-card-mini" id="tee-status-card">
-              <md-icon class="info-card-mini__icon" aria-hidden="true">security</md-icon>
-              <p class="info-card-mini__label" data-i18n="home_tee">TEE</p>
-              <p class="info-card-mini__value" id="tee-value">—</p>
-            </md-filled-card>
-          </div>
-
           <md-filled-card id="recent-activity-card" class="recent-activity-card">
             <div class="recent-activity-header">
               <span class="recent-activity-title" data-i18n="history_title">Recent activity</span>
@@ -304,6 +284,16 @@
               <md-ripple></md-ripple>
             </div>
 
+            <div class="list-item" id="boot-hash-btn">
+              <div class="li-icon"><md-icon aria-hidden="true">fingerprint</md-icon></div>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="boot_hash_title">Set Custom Boot Hash</div>
+                <span class="supporting-text" data-i18n="boot_hash_desc">Override vbmeta digest with a custom boot hash</span>
+              </div>
+              <div class="spacer"></div>
+              <md-ripple></md-ripple>
+            </div>
+
           </div>
 
           <h2 class="list-title" data-i18n="menu_pif_title">Play Integrity</h2>
@@ -376,6 +366,17 @@
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="advance_kill_all">Kill All Processes</div>
                 <span class="supporting-text" data-i18n="advance_kill_all_desc">Force-stops and clears data for all known detector, GMS, remote control, and tool apps</span>
+              </div>
+              <div class="spacer"></div>
+              <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
+              <md-ripple></md-ripple>
+            </div>
+
+            <div class="list-item" data-script="restore_backups.sh" data-destructive>
+              <div class="li-icon"><md-icon aria-hidden="true">restore</md-icon></div>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="restore_backups_title">Restore Original Backups</div>
+                <span class="supporting-text" data-i18n="restore_backups_desc">Restores your original Tricky Store files from the first-boot backup</span>
               </div>
               <div class="spacer"></div>
               <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>

@@ -65,10 +65,6 @@ export function cfgInvalidate(key?: string) {
   }
 }
 
-/** Persist all pending config writes to disk. Currently a no-op (writes are synchronous). */
-export async function cfgFlush() {
-}
-
 /** Migrate legacy localStorage keys (`selectedLanguage`, `themeMode`, `themePreset`) to the new config system. Idempotent — only runs once. */
 export async function migrateLocalStorage() {
   try {

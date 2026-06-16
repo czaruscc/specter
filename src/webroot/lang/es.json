@@ -270,5 +270,7 @@
   "auto_target_interval_aria": "Interval in seconds",
   "kb_refresh_btn": "Refresh",
   "clear_history_btn": "Clear history",
-  "home_events_initial": "0 events"
+  "home_events_initial": "0 events",
+  "restore_backups_title": "Restaurar Copias de Seguridad Originales",
+  "restore_backups_desc": "Restaura tus archivos originales de Tricky Store desde la copia de seguridad del primer arranque"
 }

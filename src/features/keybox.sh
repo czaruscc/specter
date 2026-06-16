@@ -2,7 +2,6 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/paths.sh"
 . "$MODDIR/../lib/urls.sh"
 
 log "KEYBOX" "Start"

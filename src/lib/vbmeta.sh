@@ -1,8 +1,7 @@
-#!/system/bin/sh
 # shellcheck shell=bash
 # Read big-endian integer (N bytes, default 8) from file at offset
 _val() {
-  local _h
+  _h
   _h=$(dd if="$1" bs=1 skip="$2" count="${3:-8}" 2>/dev/null \
     | od -An -tx1 | tr -d ' \n')
   echo $((16#${_h:-0}))
@@ -10,7 +9,7 @@ _val() {
 
 # Emit VBMeta blob from a partition (handles AVB footer + raw VBMeta)
 emit_vbmeta() {
-  local _dev="$1" _sz _tail _prefix _pos _vb_off _vb_sz _auth_sz _aux_sz _total
+  _dev="$1" _sz _tail _prefix _pos _vb_off _vb_sz _auth_sz _aux_sz _total
   [ -b "$_dev" ] || return 1
   _sz=$(blockdev --getsize64 "$_dev" 2>/dev/null) || return 1
 
@@ -38,9 +37,9 @@ emit_vbmeta() {
 
 # Calculate full VBMeta digest including chain partitions
 vbmeta_digest() {
-  local _part="$1" _auth_sz _aux_sz _total
-  local _desc_off _desc_sz _aux_start _pos _pos_end
-  local _tag _nbf _name_sz _name _d
+  _part="$1" _auth_sz _aux_sz _total
+  _desc_off _desc_sz _aux_start _pos _pos_end
+  _tag _nbf _name_sz _name _d
   [ -b "$_part" ] || return 1
   _auth_sz=$(_val "$_part" 12)
   _aux_sz=$(_val "$_part" 20)

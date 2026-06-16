@@ -2,39 +2,11 @@
 # shellcheck disable=SC2034
 MODDIR="$MODPATH"
 . "$MODPATH/lib/common.sh"
-. "$MODPATH/lib/paths.sh"
 . "$MODPATH/lib/config_env.sh"
+. "$MODPATH/lib/urls.sh"
 
-_vol() {
-    _vt="${1:-5}"
-    _start=$(date +%s)
-    _printed=-1
-
-    ui_print ">> Yes [$_vt]"
-
-    while true; do
-        _now=$(date +%s)
-        _elapsed=$((_now - _start))
-        [ "$_elapsed" -ge "$_vt" ] && return 0
-
-        _vk=$(timeout 1 getevent -qlc 1 2>/dev/null) 2>/dev/null
-        if [ -n "$_vk" ]; then
-            case "$_vk" in
-                *KEY_VOLUMEUP*)   return 0 ;;
-                *KEY_VOLUMEDOWN*) ui_print ">> No"; return 1 ;;
-            esac
-        fi
-
-        _remaining=$((_vt - _elapsed))
-        [ "$_remaining" -le 0 ] && _remaining=0
-        if [ "$_remaining" -ne "$_printed" ] 2>/dev/null; then
-            ui_print ">> Yes [$_remaining]"
-            _printed=$_remaining
-        fi
-
-        sleep 0.3
-    done
-}
+# Clean up old uppercase paths (module id + data dir)
+rm -rf /data/adb/modules/Specter /data/adb/Specter
 
 ui_print ""
 ui_print "____                  _            "
@@ -81,39 +53,24 @@ case "$_tee" in
 esac
 unset _tee
 
+# Download and install TEE check APK (done at install time while Binder is accessible)
+mkdir -p "$MODPATH/apk"
+curl -fsSL -o "$MODPATH/apk/specter.apk" "$TEE_CHECK_URL" 2>/dev/null || true
+if [ -f "$MODPATH/apk/specter.apk" ]; then
+  pm install -r "$MODPATH/apk/specter.apk" 2>/dev/null || true
+fi
+
 if [ "$_ts_found" = true ]; then
   ui_print ""
-  ui_print " Run full setup (keybox + target)?"
-  ui_print "  Vol Up   = Yes (5s)"
-  ui_print "  Vol Down = No"
-  ui_print ""
-
-  _vol; _choice=$?
-  case $_choice in
-    1)
-      ui_print "- Skipping full setup."
-      ;;
-    *)
-      ui_print "- Installing keybox..."
-      if ! sh "$MODPATH/features/keybox.sh"; then
-        if [ ! -f "$TARGET_FILE" ]; then
-          ui_print "- Error: Keybox installation failed. Upload manually via WebUI."
-        fi
-      fi
-
-      ui_print "- Generating target.txt..."
-      if ! sh "$MODPATH/features/target.sh"; then
-        ui_print "- target.txt generation failed"
-      else
-        ui_print "- target.txt generated"
-      fi
-      ;;
-  esac
-  unset _choice
+  ui_print " >> First-boot setup: keybox + target (next reboot)"
 fi
 unset _ts_found
 
+# Mark first-boot setup as pending (runs once after reboot in boot_core.sh)
+touch "$MODPATH/.first_boot_pending"
+
 mkdir -p "$MODPATH/webroot/json"
+echo "{\"MODDIR\": \"$MODPATH\", \"SPECTER_DIR\": \"$SPECTER_DIR\"}" > "$MODPATH/webroot/json/module_paths.json"
 
 # Backup module.prop for description override system
 cp "$MODPATH/module.prop" "$MODPATH/module.prop.bak"
@@ -126,7 +83,7 @@ echo "1" > "$SPECTER_DIR/rom_spoof_reported"
 # Conflicts are resolved automatically at boot, no interactive prompts needed
 
 # Generate fresh keybox info for description
-if [ -d "/data/adb/modules/tricky_store" ] || [ -d "/data/adb/modules_update/tricky_store" ]; then
+if [ -d "$MODULES_BASE/tricky_store" ] || [ -d "${MODULES_BASE}_update/tricky_store" ]; then
   sh "$MODPATH/features/keybox_info.sh" >/dev/null 2>&1 || true
 fi
 

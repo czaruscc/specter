@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   import('./prop-handler-ui.js').then(m => m.wirePropHandler()).catch(() => {});
   import('./gms-ui.js').then(m => m.wireGms()).catch(() => {});
   import('./security-patch-ui.js').then(m => m.wireSecurityPatch()).catch(() => {});
+  import('./boot-hash-ui.js').then(m => m.wireBootHash()).catch(() => {});
 
   const savedDevMode = await cfgGet('dev_mode', 'false') || 'false';
   setDevMode(savedDevMode === 'true');
@@ -98,10 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     refreshKeyboxStatus().catch(() => {});
   });
 
-  /* Phase 4: Preload page MWC + background tasks */
-  import('./material-tools.js').catch(() => {});
-  import('./material-control.js').catch(() => {});
-  import('./material-settings.js').catch(() => {});
+  /* Phase 4: Background tasks */
   initNetwork();
   import('./keybox-ui.js').then(m => m.populateProviders()).catch(() => {});
   loadContributors().catch(() => {});

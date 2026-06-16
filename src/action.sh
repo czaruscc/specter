@@ -7,7 +7,6 @@ case "$(readlink /proc/$$/exe 2>/dev/null)" in
 esac
 
 . "$MODDIR/lib/common.sh"
-. "$MODDIR/lib/paths.sh"
 . "$MODDIR/lib/config_env.sh"
 
 ACTION_LOG="$SPECTER_DIR/log/action.log"

@@ -1,4 +1,4 @@
-import { cfgGet, cfgSet, cfgInvalidate } from './cfg.js';
+import { cfgGet, cfgSet } from './cfg.js';
 import { showToast } from './toast.js';
 import { getTranslation } from './i18n.js';
 
@@ -61,8 +61,6 @@ export function openGmsDialog() {
           const cd = dialog.querySelector('#gms-clear-data') as MdSwitch;
           cfgSet('action_gms_force_stop', fs.selected ? '1' : '0');
           cfgSet('action_gms_clear_data', cd.selected ? '1' : '0');
-          cfgInvalidate('action_gms_force_stop');
-          cfgInvalidate('action_gms_clear_data');
           showToast(t('toast_success', 'Done'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
           dialog.close();
         } catch (e) {

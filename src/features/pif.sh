@@ -5,7 +5,7 @@ MODDIR=${0%/*}
 
 log "PIF" "Start"
 
-PIF_DIR="/data/adb/modules/playintegrityfix"
+: "${PIF_DIR:=$MODULES_BASE/playintegrityfix}"
 
 check_network || { log "PIF" "Error: No internet connection"; exit 1; }
 
@@ -32,6 +32,6 @@ case "$_NAME" in
     ;;
 esac
 
-unset _NAME PIF_DIR
+unset _NAME
 log "PIF" "Finish"
 exit 0

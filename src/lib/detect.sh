@@ -35,12 +35,12 @@ detect_root_solution() {
 
 _pif_prop() {
   [ ! -d "/data/adb/Box-Brain" ] || return 1
-  [ -f "/data/adb/modules/playintegrityfix/module.prop" ] || return 1
-  grep "^name=" "/data/adb/modules/playintegrityfix/module.prop" 2>/dev/null | cut -d= -f2
+  [ -f "$MODULES_BASE/playintegrityfix/module.prop" ] || return 1
+  grep "^name=" "$MODULES_BASE/playintegrityfix/module.prop" 2>/dev/null | cut -d= -f2
 }
 
 _ts_prop() {
-  for _ts_dir in /data/adb/modules/tricky_store /data/adb/modules_update/tricky_store; do
+  for _ts_dir in "$MODULES_BASE/tricky_store" "${MODULES_BASE}_update/tricky_store"; do
     [ -f "$_ts_dir/module.prop" ] || continue
     grep "^name=" "$_ts_dir/module.prop" 2>/dev/null | cut -d= -f2
     return 0
@@ -52,6 +52,6 @@ _is_teesimulator() {
   case "$(_ts_prop)" in
     *TEESimulator*) return 0 ;;
   esac
-  [ -f "/data/adb/tricky_store/spoof_build_vars" ] && return 0
+  [ -f "$TRICKY_DIR/spoof_build_vars" ] && return 0
   return 1
 }

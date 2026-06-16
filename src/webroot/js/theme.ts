@@ -110,7 +110,7 @@ function applyPreset(preset: string) {
   applyNamedPreset(preset, isDark);
 }
 
-function applyNamedPreset(name: string, isDark: boolean, seed?: string) {
+function applyNamedPreset(name: string, isDark: boolean) {
   const vars = getPresetColors(name, isDark);
   if (!vars) return;
   const root = document.documentElement;
@@ -118,7 +118,7 @@ function applyNamedPreset(name: string, isDark: boolean, seed?: string) {
     root.style.setProperty(key, val);
   }
   try {
-    const s = seed || PRESETS[name] || '';
+    const s = PRESETS[name] || '';
     if (s) {
       localStorage.setItem('specter_theme_vars', JSON.stringify(vars));
       localStorage.setItem('specter_theme_resolved', isDark ? 'dark' : 'light');

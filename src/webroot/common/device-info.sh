@@ -19,7 +19,7 @@ _root_type="$ROOT_TYPE"
 
 # Security patch date, real system value + optional spoofed value
 _build_patch=$(getprop ro.build.version.security_patch 2>/dev/null || echo "")
-_patch_date=$(grep -E '^(boot|all)=' /data/adb/tricky_store/security_patch.txt 2>/dev/null | cut -d= -f2)
+_patch_date=$(grep -E '^(boot|all)=' "$SECURITY_PATCH_FILE" 2>/dev/null | cut -d= -f2)
 [ -z "$_patch_date" ] && _patch_date="$_build_patch"
 
 # Flags
@@ -40,11 +40,11 @@ fi
 _pif_model=""
 for _pif_path in \
   "/data/adb/pif.prop" \
-  "/data/adb/modules/playintegrityfix/custom.pif.prop" \
+  "$MODULES_BASE/playintegrityfix/custom.pif.prop" \
   "/data/adb/pif.json" \
-  "/data/adb/modules/playintegrityfix/pif.json" \
-  "/data/adb/modules/playintegrityfix/autopif.json" \
-  "/data/adb/modules/playintegrityfix/custom.pif.json"
+  "$MODULES_BASE/playintegrityfix/pif.json" \
+  "$MODULES_BASE/playintegrityfix/autopif.json" \
+  "$MODULES_BASE/playintegrityfix/custom.pif.json"
 do
   [ -f "$_pif_path" ] || continue
   case "$_pif_path" in

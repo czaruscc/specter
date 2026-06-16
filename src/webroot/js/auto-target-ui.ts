@@ -1,5 +1,5 @@
 import { exec, getModuleDir } from './bridge.js';
-import { cfgGet, cfgSet, cfgInvalidate } from './cfg.js';
+import { cfgGet, cfgSet } from './cfg.js';
 import { showToast } from './toast.js';
 import { getTranslation } from './i18n.js';
 import { appendToOutput } from './terminal.js';
@@ -93,9 +93,6 @@ export function openAutoTargetDialog() {
             await exec(`sh ${shellEscape(modDir + '/features/auto_target.sh')} >/dev/null 2>&1`);
             appendToOutput('[AUTO_TARGET] Immediate scan triggered via UI');
           }
-
-          cfgInvalidate('toggle_auto_target');
-          cfgInvalidate('auto_target_interval');
 
           showToast(t('auto_target_saved', 'Auto targeting settings saved'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
           dialog.close();

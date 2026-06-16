@@ -6,7 +6,7 @@ export const ONLINE_ENDPOINTS: string[] = [
 export const STORAGE_KEY: string = 'specter_script_history';
 export const MAX_ENTRIES: number = 240;
 export const API_URLS: Record<string, string> = {
-  KEY_CATALOG: 'https://rawbin.netlify.app/key/catalog',
+  KEY_CATALOG: 'https://rawbin.dpejoh.com/catalog',
   INFO: '/json/info.json',
   KEYBOX_INFO: '/json/keybox_info.json',
   GITHUB: 'https://github.com/dpejoh/specter',
@@ -31,7 +31,10 @@ export const CONTROL_TOGGLES: ToggleDef[] = [
   { id: 'toggle-action_security_patch', key: 'toggle_action_security_patch' },
   { id: 'toggle-action_keybox', key: 'toggle_action_keybox' },
   { id: 'toggle-action_pif', key: 'toggle_action_pif' },
+  { id: 'toggle-denylist_merge', key: 'toggle_denylist_merge' },
 ];
+
+export const TRICKY_DIR = '/data/adb/tricky_store';
 
 export function defaultSecurityPatch(): string {
   const now = new Date();

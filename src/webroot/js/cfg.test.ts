@@ -7,7 +7,7 @@ vi.mock('./bridge.js', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
-  setModuleDir('/data/adb/Specter')
+  setModuleDir('/data/adb/specter')
   cfgInvalidate()
   localStorage.clear()
 })

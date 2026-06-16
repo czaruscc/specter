@@ -8,6 +8,32 @@ REMOTE_CONTROL_APPS="com.anydesk.anydeskandroid com.teamviewer.teamviewer.market
 
 TOOL_APPS="bin.mt.plus bin.mt.plus.canary com.omarea.vtools moe.shizuku.privileged.api com.estrongs.android.pop com.coolapk.market com.sevtinge.hyperceiler com.coderstory.toolkit"
 
+DETECTOR_APPS="
+com.scottyab.rootbeer
+com.topjohnwu.magisk
+com.kimjisub.launcher
+com.saurik.substrate
+com.formyhm.hideroot
+com.devadvance.rootcloak
+com.amphoras.hidelockscreen
+com.amphoras.hidethem
+com.ramcrowd.safetynet
+com.chelpus.safetynet
+com.arjan.safetynetfix
+com.scottyab.safetynet
+com.stupidstuff.safetynet
+com.genymotion.genymotion
+com.bluestacks
+com.andy.andy
+com.ami.duos
+com.vmos
+com.parallel.parallel
+io.va.exposed
+org.meowcat.virtualboot
+com.lody.virtual
+com.lbe.parallel
+"
+
 BLACKLIST_EXTRA="com.android.chrome com.google.android.apps.photos com.google.android.youtube com.topjohnwu.magisk mmrl"
 
 SUSPICIOUS_PROPS="\

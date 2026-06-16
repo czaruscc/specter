@@ -52,12 +52,17 @@ export async function openFileBrowser(onSelect: (path: string) => void) {
       </div>
     `;
 
+    if (!document.body.contains(dialog)) {
+      document.body.appendChild(dialog);
+      dialog.addEventListener('close', () => document.body.removeChild(dialog));
+    }
+
     dialog.querySelector('#fb-back')?.addEventListener('click', () => {
       const parent = currentPath.substring(0, currentPath.lastIndexOf('/')) || '/';
       currentPath = parent === '/' || parent.startsWith('/sdcard') ? parent : '/sdcard';
       loadDir(currentPath);
     });
-    document.getElementById('fb-show-all')?.addEventListener('click', () => { allFiles = true; render(); });
+    dialog.querySelector('#fb-show-all')?.addEventListener('click', () => { allFiles = true; render(); });
 
     dialog.querySelectorAll('.fb-row').forEach(el => {
       el.addEventListener('click', async () => {
@@ -85,8 +90,6 @@ export async function openFileBrowser(onSelect: (path: string) => void) {
     });
 
     if (!document.body.contains(dialog)) {
-      document.body.appendChild(dialog);
-      dialog.addEventListener('close', () => document.body.removeChild(dialog));
       dialog.show();
     }
   }

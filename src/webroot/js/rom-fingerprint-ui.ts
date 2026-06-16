@@ -1,4 +1,4 @@
-import { cfgGet, cfgSet, cfgInvalidate } from './cfg.js';
+import { cfgGet, cfgSet } from './cfg.js';
 import { showToast } from './toast.js';
 import { getTranslation } from './i18n.js';
 
@@ -61,8 +61,6 @@ export function openRomFingerprintDialog() {
           const p = dialog.querySelector('#rf-prefix') as MdSwitch;
           cfgSet('rom_fingerprint_hexpatch', h.selected ? '1' : '0');
           cfgSet('rom_fingerprint_prefix', p.selected ? '1' : '0');
-          cfgInvalidate('rom_fingerprint_hexpatch');
-          cfgInvalidate('rom_fingerprint_prefix');
           showToast(t('toast_success', 'Done'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
           dialog.close();
         } catch (e) {

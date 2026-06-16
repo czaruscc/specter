@@ -1,4 +1,4 @@
-import { fetchJson, setText } from './utils.js';
+import { fetchJson } from './utils.js';
 import { runScript } from './bridge.js';
 import { appendToOutput } from './terminal.js';
 import { API_URLS } from './constants.js';
@@ -31,19 +31,8 @@ export async function refreshKeyboxStatus(): Promise<KeyboxInfoJson | null> {
 }
 
 function applyAllDeviceInfo(data: InfoJson) {
-  applyDeviceInfo(data);
-  if (data.flags) applyFlags(data.flags);
   applyTeeStatus(data);
   applySecurityPatch(data);
-}
-
-function applyDeviceInfo(data: InfoJson) {
-  setText('root-value', data.root || '—');
-  setText('version-info-value', data.version || '—');
-}
-
-function applyFlags(flags: { twrp?: boolean }) {
-  if (!flags) return;
 }
 
 function applyKeyboxStatus(data: KeyboxInfoJson) {
@@ -104,19 +93,9 @@ function applySecurityPatch(data: InfoJson) {
 }
 
 function applyTeeStatus(data: InfoJson) {
-  const el = document.getElementById('tee-value');
-  const card = document.getElementById('tee-status-card');
   const spTee = document.getElementById('sp-tee');
-  if (!el || !card) return;
   const status = data.tee_status || '';
   const label = status === 'broken' ? t('tee_broken', 'Broken') : status === 'normal' ? t('tee_normal', 'Normal') : '—';
-  el.textContent = label;
-  card.className = 'info-card-mini';
-  if (status === 'broken') {
-    card.classList.add('info-card-mini--warning');
-  } else if (status === 'normal') {
-    card.classList.add('info-card-mini--success');
-  }
   if (spTee) {
     spTee.textContent = label;
     spTee.className = 'sp-hero-tee';

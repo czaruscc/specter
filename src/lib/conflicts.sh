@@ -1,5 +1,5 @@
 # shellcheck shell=sh
-CONFLICT_BACKUP_FILE="/data/adb/Specter/conflict_backups.txt"
+CONFLICT_BACKUP_FILE="$SPECTER_DIR/conflict_backups.txt"
 
 _conflict_registry() { cat "$MODDIR/config/conflicts.txt" 2>/dev/null || true; }
 
@@ -7,10 +7,10 @@ _conflict_detect() {
   _cd_modid="$1"
   case "$_cd_modid" in
     integritybox)
-      [ -d "/data/adb/modules/playintegrityfix" ] && [ -d "/data/adb/Box-Brain" ]
+      [ -d "$MODULES_BASE/playintegrityfix" ] && [ -d "/data/adb/Box-Brain" ]
       ;;
     *)
-      [ -d "/data/adb/modules/$_cd_modid" ] || [ -d "/data/adb/modules_update/$_cd_modid" ]
+      [ -d "$MODULES_BASE/$_cd_modid" ] || [ -d "${MODULES_BASE}_update/$_cd_modid" ]
       ;;
   esac
 }
@@ -52,7 +52,7 @@ _conflict_apply_scripts() {
 }
 
 migrate_conflict_config() {
-  _mc_old_dir="/data/adb/Specter/config"
+  _mc_old_dir="$SPECTER_DIR/config"
   [ -d "$_mc_old_dir" ] || return 0
   while IFS='|' read -r _mc_id _mc_name _mc_scripts _mc_features _mc_type; do
     [ -z "$_mc_id" ] && continue

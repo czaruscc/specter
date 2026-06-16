@@ -7,7 +7,6 @@ if [ -z "$_NS_INIT" ] && [ -x /system/bin/nsenter ] && [ -e /proc/1/ns/mnt ]; th
 fi
 
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/paths.sh"
 . "$MODDIR/../lib/package_list.sh"
 . "$MODDIR/../lib/config_env.sh"
 
@@ -35,7 +34,6 @@ if [ "$_sp" != "0" ]; then
         critical) echo "[CRITICAL] $_prop = $_value" ;;
         warning)  echo "[WARNING] $_prop = $_value" ;;
       esac
-      echo "restore|$_prop|$_value" >> "$SPECTER_DIR/slain_props.prop" 2>/dev/null || true
       hexpatch_deleteprop "$_prop"
     fi
   done

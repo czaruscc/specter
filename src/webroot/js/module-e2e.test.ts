@@ -33,7 +33,7 @@ describe('module.zip structure', () => {
 
 describe('module.prop', () => {
   it('has required fields', () => {
-    expect(moduleProp).toContain('id=Specter')
+    expect(moduleProp).toContain('id=specter')
     expect(moduleProp).toContain('version=')
     expect(moduleProp).toContain('versionCode=')
     expect(moduleProp).toContain('author=')

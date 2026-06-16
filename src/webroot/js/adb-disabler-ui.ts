@@ -1,4 +1,4 @@
-import { cfgGet, cfgSet, cfgInvalidate } from './cfg.js';
+import { cfgGet, cfgSet } from './cfg.js';
 import { showToast } from './toast.js';
 import { getTranslation } from './i18n.js';
 
@@ -78,9 +78,6 @@ export function openAdbDisablerDialog() {
           cfgSet('toggle_adb_disabler_dev_options', devToggle.selected ? '1' : '0');
           cfgSet('toggle_adb_disabler_usb_debug', usbToggle.selected ? '1' : '0');
           cfgSet('toggle_adb_disabler_oem_unlock', oemToggle.selected ? '1' : '0');
-          cfgInvalidate('toggle_adb_disabler_dev_options');
-          cfgInvalidate('toggle_adb_disabler_usb_debug');
-          cfgInvalidate('toggle_adb_disabler_oem_unlock');
 
           showToast(t('toast_success', 'Done'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
           dialog.close();

@@ -2,11 +2,10 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/lib/common.sh"
-. "$MODDIR/lib/paths.sh"
 
 if [ -f "$BACKUP_FILE" ]; then
     rm -f "$TARGET_FILE"
-    mv "$BACKUP_FILE" "$TARGET_FILE"
+    mv "$BACKUP_FILE" "$TARGET_FILE" || true
     log "UNINSTALL" "Restored original keybox from backup"
 fi
 

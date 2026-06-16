@@ -1,0 +1,73 @@
+import { exec, getModuleDir } from './bridge.js';
+import { getTranslation } from './i18n.js';
+import { showToast } from './toast.js';
+import { shellEscape } from './utils.js';
+
+const t = (key: string, fallback: string): string => getTranslation(key) || fallback;
+
+export function wireBootHash() {
+  const btn = document.getElementById('boot-hash-btn');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    const moddir = getModuleDir();
+    if (!moddir) return;
+
+    const current = await exec(`cat ${shellEscape(moddir + '/config/custom_boot_hash.val')} 2>/dev/null || echo ""`);
+    const currentHash = (current.stdout || '').trim();
+
+    const dialog = document.createElement('md-dialog');
+    dialog.innerHTML = `
+      <div slot="headline">${t('boot_hash_dialog_title', 'Custom Boot Hash')}</div>
+      <div slot="content" style="min-height:0">
+        <md-outlined-text-field id="boot-hash-input" type="text" label="${t('boot_hash_label', 'Boot Hash (SHA256)')}" placeholder="64 hex characters" maxlength="64" autocapitalize="none" style="width:100%;--md-outlined-text-field-container-shape:14px;font-family:monospace"></md-outlined-text-field>
+        <p class="md-typescale-body-small" style="margin:12px 0 4px;opacity:.7">
+          ${t('boot_hash_info', 'Leave empty to use auto-computed boot hash. The hash is a 64-character hex string.')}
+        </p>
+      </div>
+      <div slot="actions">
+        <md-text-button id="boot-hash-clear">${t('dialog_clear', 'Clear')}</md-text-button>
+        <md-text-button id="boot-hash-cancel">${t('dialog_cancel', 'Cancel')}</md-text-button>
+        <md-filled-tonal-button id="boot-hash-save">${t('dialog_save', 'Save')}</md-filled-tonal-button>
+      </div>
+    `;
+    document.body.appendChild(dialog);
+
+    const input = dialog.querySelector('#boot-hash-input') as HTMLInputElement | null;
+    if (input && currentHash) input.value = currentHash;
+
+    dialog.querySelector('#boot-hash-cancel')!.addEventListener('click', () => dialog.close());
+    dialog.querySelector('#boot-hash-clear')!.addEventListener('click', async () => {
+      try {
+        await exec(`rm -f ${shellEscape(moddir + '/config/custom_boot_hash.val')}`);
+        await exec(`sh ${shellEscape(moddir + '/refresh_desc.sh')}`);
+        showToast(t('boot_hash_cleared', 'Custom boot hash cleared'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
+        dialog.close();
+      } catch {
+        showToast(t('simple_toast_error', 'Failed'), { icon: 'error', type: 'error', autoCloseDelay: 3000 });
+      }
+    });
+
+    dialog.querySelector('#boot-hash-save')!.addEventListener('click', async () => {
+      const val = input!.value.trim();
+      if (val && !/^[a-f0-9]{64}$/.test(val)) {
+        showToast(t('boot_hash_invalid', 'Invalid hash (must be 64 hex characters)'), { icon: 'error', type: 'error', autoCloseDelay: 3000 });
+        return;
+      }
+      try {
+        if (val) {
+          await exec(`mkdir -p ${shellEscape(moddir + '/config')} && printf '%s' ${shellEscape(val)} > ${shellEscape(moddir + '/config/custom_boot_hash.val')}`);
+        } else {
+          await exec(`rm -f ${shellEscape(moddir + '/config/custom_boot_hash.val')}`);
+        }
+        await exec(`sh ${shellEscape(moddir + '/refresh_desc.sh')}`);
+        showToast(t('boot_hash_saved', 'Custom boot hash saved'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
+        dialog.close();
+      } catch {
+        showToast(t('boot_hash_save_error', 'Failed to save'), { icon: 'error', type: 'error', autoCloseDelay: 4000 });
+      }
+    });
+
+    dialog.addEventListener('close', () => document.body.removeChild(dialog));
+    dialog.show();
+  });
+}
