@@ -3,53 +3,50 @@
 # Provides refresh_module_description() for boot-time and on-demand use.
 
 refresh_module_description() {
-  # Compute new description
-  _new_desc=""
+  _problems=""
 
   if [ ! -d "$MODULES_BASE/tricky_store" ] && [ ! -d "${MODULES_BASE}_update/tricky_store" ]; then
-    _new_desc="🚨 Tricky Store not installed"
-  else
-    # Check for aggressive conflicts
-    _cf=""
-    while IFS='|' read -r _id _name _scripts _features _type; do
-      [ -z "$_id" ] && continue
-      [ "$_type" != "aggressive" ] && continue
-      _conflict_detect "$_id" || continue
-      _cf="$_name"
-      break
-    done <<CF_EOF
+    _problems="🚨 Tricky Store not installed"
+  fi
+
+  _cf=""
+  while IFS='|' read -r _id _name _scripts _features _type; do
+    [ -z "$_id" ] && continue
+    [ "$_type" != "aggressive" ] && continue
+    _conflict_detect "$_id" || continue
+    _cf="${_cf}${_cf:+, }$_name"
+  done <<CF_EOF
 $(_conflict_registry)
 CF_EOF
+  [ -n "$_cf" ] && _problems="${_problems}${_problems:+ | }🚨 Conflict: $_cf"
 
-    if [ -n "$_cf" ]; then
-      _new_desc="🚨 Conflict: $_cf"
-    else
-      # Read keybox info, single pass with sed
-      _kb_info=$(head -c 512 "$MODDIR/webroot/json/keybox_info.json" 2>/dev/null || echo "")
-      _kb_src=$(echo "$_kb_info" | grep -o '"source": *"[^"]*"' | cut -d'"' -f4) || true
-      _kb_ver=$(echo "$_kb_info" | grep -o '"text": *"[^"]*"' | cut -d'"' -f4) || true
-      _kb_rev=$(echo "$_kb_info" | grep -o '"revoked": *true') || true
-      _kb_soft=$(echo "$_kb_info" | grep -o '"softbanned": *true') || true
+  if [ -n "$_problems" ]; then
+    _new_desc="$_problems"
+  else
+    _kb_info=$(head -c 512 "$MODDIR/webroot/json/keybox_info.json" 2>/dev/null || echo "")
+    _kb_src=$(echo "$_kb_info" | grep -o '"source": *"[^"]*"' | cut -d'"' -f4) || true
+    _kb_ver=$(echo "$_kb_info" | grep -o '"text": *"[^"]*"' | cut -d'"' -f4) || true
+    _kb_rev=$(echo "$_kb_info" | grep -o '"revoked": *true') || true
+    _kb_soft=$(echo "$_kb_info" | grep -o '"softbanned": *true') || true
 
-      [ -z "$_kb_src" ] && _kb_src=$(cfg_get 'kb_provider' '')
-      [ -z "$_kb_src" ] && [ "$(cfg_get 'kb_private' 'false')" = "true" ] && _kb_src="Private"
+    [ -z "$_kb_src" ] && _kb_src=$(cfg_get 'kb_provider' '')
+    [ -z "$_kb_src" ] && [ "$(cfg_get 'kb_private' 'false')" = "true" ] && _kb_src="Private"
 
-      _apps=$(wc -l < "$TARGET_TXT" 2>/dev/null || echo 0)
-      _patch=$(grep -E '^(boot|all)=' "$SECURITY_PATCH_FILE" 2>/dev/null | cut -d= -f2) || true
-      [ -z "$_patch" ] && _patch="-"
+    _apps=$(wc -l < "$TARGET_TXT" 2>/dev/null || echo 0)
+    _patch=$(grep -E '^(boot|all)=' "$SECURITY_PATCH_FILE" 2>/dev/null | cut -d= -f2) || true
+    [ -z "$_patch" ] && _patch="-"
 
-      if [ -f "$TARGET_FILE" ] || [ -f "$LOCKED_FILE" ]; then
-        _title="$_kb_src${_kb_ver:+ $_kb_ver}"
-        if [ -n "$_kb_rev" ]; then
-          _new_desc="🔑 $_title · ❌ | $_apps apps | 🛡️ $_patch"
-        elif [ -n "$_kb_soft" ]; then
-          _new_desc="🔑 $_title · ⚠️ | $_apps apps | 🛡️ $_patch"
-        else
-          _new_desc="🔑 $_title · ✅ | $_apps apps | 🛡️ $_patch"
-        fi
+    if [ -f "$TARGET_FILE" ] || [ -f "$LOCKED_FILE" ]; then
+      _title="$_kb_src${_kb_ver:+ $_kb_ver}"
+      if [ -n "$_kb_rev" ]; then
+        _new_desc="🔑 $_title · ❌ | $_apps apps | 🛡️ $_patch"
+      elif [ -n "$_kb_soft" ]; then
+        _new_desc="🔑 $_title · ⚠️ | $_apps apps | 🛡️ $_patch"
       else
-        _new_desc="❌ No keybox | $_apps apps | 🛡️ $_patch"
+        _new_desc="🔑 $_title · ✅ | $_apps apps | 🛡️ $_patch"
       fi
+    else
+      _new_desc="❌ No keybox | $_apps apps | 🛡️ $_patch"
     fi
   fi
 
@@ -63,5 +60,5 @@ CF_EOF
     "$_ksud" module config --internal Specter set override.description "$_new_desc" 2>/dev/null || true
   done
 
-  unset _new_desc _escaped _cf _kb_info _kb_src _kb_ver _kb_rev _kb_soft _apps _patch _title _ksud
+  unset _problems _cf _new_desc _escaped _kb_info _kb_src _kb_ver _kb_rev _kb_soft _apps _patch _title _ksud
 }

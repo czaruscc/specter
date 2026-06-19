@@ -25,9 +25,9 @@ done
 unset _bf _bf_default
 
 if _feature_should_run "prop_handler"; then
-  [ "$(cfg_get boot_state_props 1)" != "0" ] && ! _conflict_claimed "boot_state_props" && apply_boot_props
-  [ "$(cfg_get spoof_build_props 1)" != "0" ] && ! _conflict_claimed "spoof_build_props" && spoof_build_props
-  [ "$(cfg_get region_props 1)" != "0" ] && ! _conflict_claimed "region_props" && apply_region_props
+  [ "$(cfg_get boot_state_props 1)" != "0" ] && apply_boot_props
+  [ "$(cfg_get spoof_build_props 1)" != "0" ] && spoof_build_props
+  [ "$(cfg_get region_props 1)" != "0" ] && apply_region_props
   sh "$MODDIR/features/boot_state_props.sh" >"$SPECTER_DIR/log/boot_state_props.log" 2>&1
 else
   log "SERVICE" "Skipping prop_handler (disabled by config)"

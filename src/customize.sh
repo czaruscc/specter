@@ -53,13 +53,40 @@ case "$_tee" in
 esac
 unset _tee
 
-# Extract TEE check classes.dex from module zip
-mkdir -p "$MODPATH/deps"
-unzip -qqjo "$ZIPFILE" "deps/classes.dex" -d "$MODPATH/deps" 2>/dev/null || ui_print "- No deps/classes.dex in module"
-
 if [ "$_ts_found" = true ]; then
   ui_print ""
-  ui_print " >> First-boot setup: keybox + target (next reboot)"
+  ui_print " >> First-boot setup: backup, target, security patch, keybox, PIF (next reboot)"
+else
+  ui_print ""
+  ui_print "- Tricky Store not found, checking for TEESimulator-RS..."
+  check_network 2>/dev/null || { ui_print "- No network, skipping download"; true; }
+  _gh_json=$(download "https://api.github.com/repos/Enginex0/TEESimulator-RS/releases/latest" "" 2>/dev/null) || _gh_json=""
+  _dl_url=$(echo "$_gh_json" | grep '"browser_download_url":' | sed 's/.*"browser_download_url": *"\([^"]*\)".*/\1/')
+  if [ -n "$_dl_url" ]; then
+    _ts_zip="$MODPATH/teesimulator-rs.zip"
+    case "$_dl_url" in
+      *Debug*) ui_print "- Latest release is Debug-only, skipping" ;;
+      *)
+        ui_print "- Downloading TEESimulator-RS..."
+        download "$_dl_url" "$_ts_zip" 2>/dev/null && {
+          ui_print "- Installing TEESimulator-RS..."
+          _ts_ok=1
+          case "$ROOT_SOL" in
+            magisk)  magisk --install-module "$_ts_zip" >/dev/null 2>&1 && _ts_ok=0 ;;
+            kernelsu) ksud module install "$_ts_zip" >/dev/null 2>&1 && _ts_ok=0 ;;
+            apatch)  apd module install "$_ts_zip" >/dev/null 2>&1 && _ts_ok=0 ;;
+            *)       ui_print "- Unknown root ($ROOT_SOL), zip saved to $_ts_zip"; _ts_ok=0 ;;
+          esac
+          [ "$_ts_ok" = 0 ] && ui_print "- TEESimulator-RS installed" || ui_print "- Install failed"
+          unset _ts_ok
+        } || ui_print "- Download failed"
+        rm -f "$_ts_zip"
+        ;;
+    esac
+  else
+    ui_print "- Could not fetch TEESimulator-RS release info"
+  fi
+  unset _gh_json _dl_url _ts_zip
 fi
 unset _ts_found
 
@@ -83,16 +110,5 @@ mkdir -p "$SPECTER_DIR/backup"
 # Copy shipped config files to data dir
 mkdir -p "$SPECTER_DIR/config"
 cp "$MODPATH/config/conflicts.txt" "$SPECTER_DIR/config/conflicts.txt" 2>/dev/null || true
-
-# Conflicts are resolved automatically at boot, no interactive prompts needed
-
-# Generate fresh keybox info for description
-if [ -d "$MODULES_BASE/tricky_store" ] || [ -d "${MODULES_BASE}_update/tricky_store" ]; then
-  sh "$MODPATH/features/keybox_info.sh" >/dev/null 2>&1 || true
-fi
-
-# Refresh module description so manager shows dynamic status immediately
-. "$MODPATH/lib/desc.sh"
-refresh_module_description
 
 return 0

@@ -31,12 +31,12 @@ const FONTS: FontDef[] = [
 
 async function ensureAndApply(font: FontDef): Promise<void> {
   const mod = getModuleDir();
-  const path = mod ? `${mod}/webroot/${font.filename}` : null;
+  const path = mod ? `${mod}/webroot/fonts/${font.filename}` : null;
 
   if (path) {
     const { stdout } = await exec(`test -f ${path} && echo "1" || echo "0"`);
     if (stdout.trim() === '1') {
-      applyFont(font, `./${font.filename}`);
+      applyFont(font, `./fonts/${font.filename}`);
     }
   }
 }

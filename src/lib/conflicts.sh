@@ -28,13 +28,41 @@ _conflict_rename_bak() {
   [ -f "$_cr_path" ] || return 0
   [ -f "$_cr_path.bak" ] && return 0
   mv "$_cr_path" "$_cr_path.bak" 2>/dev/null || true
-  echo "$_cr_path" >> "$CONFLICT_BACKUP_FILE" 2>/dev/null || true
+  grep -qxF "$_cr_path" "$CONFLICT_BACKUP_FILE" 2>/dev/null ||
+    echo "$_cr_path" >> "$CONFLICT_BACKUP_FILE" 2>/dev/null || true
 }
 
 _conflict_restore_bak() {
   _cr_path="$1"
   [ -f "$_cr_path.bak" ] || return 0
   mv "$_cr_path.bak" "$_cr_path" 2>/dev/null || true
+}
+
+_conflict_uninstall() {
+  _cu_id="$1"
+  _cu_name="$2"
+  _cu_removed=1
+  # Map registry IDs to actual module directory names
+  _cu_dir="$MODULES_BASE/$_cu_id"
+  case "$_cu_id" in
+    integritybox) _cu_dir="$MODULES_BASE/playintegrityfix" ;;
+  esac
+  _cu_dir_upd="${MODULES_BASE}_update/${_cu_dir##*/}"
+  for _cu_path in "$_cu_dir" "$_cu_dir_upd"; do
+    [ -d "$_cu_path" ] || continue
+    rm -rf "$_cu_path"
+    log "CONFLICT" "Uninstalled $_cu_name ($_cu_id)"
+    _cu_removed=0
+  done
+  # integritybox also stores state in Box-Brain
+  [ "$_cu_id" = "integritybox" ] && [ -d "/data/adb/Box-Brain" ] && {
+    rm -rf "/data/adb/Box-Brain"
+    log "CONFLICT" "Uninstalled Box-Brain (integritybox state)"
+  }
+  # Strip any backup entries for scripts in the removed module
+  [ "$_cu_removed" = "0" ] && [ -f "$CONFLICT_BACKUP_FILE" ] &&
+    sed -i "\|/$_cu_id/|d" "$CONFLICT_BACKUP_FILE" 2>/dev/null || true
+  unset _cu_id _cu_name _cu_dir _cu_dir_upd _cu_path _cu_removed
 }
 
 _conflict_apply_scripts() {
@@ -65,16 +93,23 @@ resolve_conflicts() {
   ensure_dir "$SPECTER_DIR"
   touch "$CONFLICT_BACKUP_FILE" 2>/dev/null || true
 
-  # Moved to boot_core.sh (needs PM service)
   while IFS='|' read -r _rc_id _rc_name _rc_scripts _rc_features _rc_type; do
     [ -z "$_rc_id" ] && continue
     _conflict_detect "$_rc_id" || continue
 
     case "$_rc_type" in
       aggressive)
-        _conflict_apply_scripts "$_rc_scripts" "priority_specter"
+        case "$_rc_id" in
+          Yurikey|integritybox|tsupport-advance|sensitive_props)
+            _conflict_uninstall "$_rc_id" "$_rc_name"
+            log "CONFLICT" "$_rc_name: 100% overlap, uninstalled"
+            ;;
+          *)
+            _conflict_apply_scripts "$_rc_scripts" "priority_specter"
+            log "CONFLICT" "$_rc_name: 100% overlap, disabled, Specter covers all"
+            ;;
+        esac
         cfg_set "conflict_$_rc_id" "priority_specter"
-        log "CONFLICT" "$_rc_name: 100% overlap, disabled, Specter covers all"
         ;;
       passive)
         cfg_set "conflict_$_rc_id" "priority_module"
@@ -89,21 +124,32 @@ EOF
 
 _conflict_claimed() {
   _cc_feature="$1"
-  _cc_claimed=1
+  # First pass: if any aggressive module with priority_specter covers this feature,
+  # Specter is now the designated handler — no other module can claim it
   while IFS='|' read -r _cc_id _cc_name _cc_scripts _cc_features _cc_type; do
     [ -z "$_cc_id" ] && continue
     _conflict_detect "$_cc_id" || continue
-    case ",$_cc_features," in
-      *",$_cc_feature,"*) ;;
-      *) continue ;;
-    esac
-    [ "$(_conflict_choice "$_cc_id")" = "priority_module" ] || continue
-    _cc_claimed=0; break
+    case ",$_cc_features," in *",$_cc_feature,"*) ;; *) continue ;; esac
+    [ "$_cc_type" = "aggressive" ] || continue
+    [ "$(_conflict_choice "$_cc_id")" = "priority_specter" ] || continue
+    unset _cc_id _cc_name _cc_scripts _cc_features _cc_type _cc_feature
+    return 1  # not claimed — Specter handles it
   done <<EOF
 $(_conflict_registry)
 EOF
-  unset _cc_id _cc_name _cc_scripts _cc_features _cc_type
-  return $_cc_claimed
+  # Second pass: check if any module (any type) has priority_module for this feature
+  while IFS='|' read -r _cc_id _cc_name _cc_scripts _cc_features _cc_type; do
+    [ -z "$_cc_id" ] && continue
+    _conflict_detect "$_cc_id" || continue
+    case ",$_cc_features," in *",$_cc_feature,"*) ;; *) continue ;; esac
+    [ "$(_conflict_choice "$_cc_id")" = "priority_module" ] || continue
+    unset _cc_id _cc_name _cc_scripts _cc_features _cc_type _cc_feature
+    return 0  # claimed by this module
+  done <<EOF
+$(_conflict_registry)
+EOF
+  unset _cc_id _cc_name _cc_scripts _cc_features _cc_type _cc_feature
+  return 1  # not claimed
 }
 
 conflict_status_json() {

@@ -17,8 +17,8 @@ log_rotate "$ACTION_LOG"
   log "ACTION" "Running full integrity pipeline"
 
   [ "$(cfg_get toggle_action_gms 1)" != "0" ] && sh "$MODDIR/features/kill_play_store.sh" || true
-  [ "$(cfg_get toggle_action_target 1)" != "0" ] && sh "$MODDIR/features/target.sh" --merge || true
-  [ "$(cfg_get toggle_action_security_patch 1)" != "0" ] && sh "$MODDIR/features/security_patch.sh" || true
+  [ "$(cfg_get toggle_action_target 1)" != "0" ] && ! _conflict_claimed "target" && sh "$MODDIR/features/target.sh" --merge || true
+  [ "$(cfg_get toggle_action_security_patch 1)" != "0" ] && ! _conflict_claimed "security_patch" && sh "$MODDIR/features/security_patch.sh" || true
   [ "$(cfg_get toggle_action_keybox 1)" != "0" ] && sh "$MODDIR/features/keybox.sh" || true
   [ "$(cfg_get toggle_action_pif 1)" != "0" ] && [ -f "$MODDIR/features/pif.sh" ] && sh "$MODDIR/features/pif.sh" || true
 

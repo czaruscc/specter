@@ -1,6 +1,6 @@
 log() {
   _l_tag="$1" _l_msg="$2"
-  printf '[%s] %s\n' "$_l_tag" "$_l_msg"
+  printf '[%s] [%s] %s\n' "$(date '+%T')" "$_l_tag" "$_l_msg"
   [ -x /system/bin/log ] && /system/bin/log -t "Specter" -p i "$_l_tag: $_l_msg" 2>/dev/null || true
   unset _l_tag _l_msg
 }
