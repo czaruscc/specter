@@ -10,21 +10,16 @@
 
 [![latest release](https://img.shields.io/github/v/release/dpejoh/specter?label=Release&logo=github)](https://github.com/dpejoh/specter/releases/latest)
 [![CI](https://github.com/dpejoh/specter/actions/workflows/build-test.yml/badge.svg)](https://github.com/dpejoh/specter/actions/workflows/build-test.yml)
-[![coverage](https://img.shields.io/badge/coverage-12%25-yellow)]()
 
-Keybox management, security spoofing, and detection avoidance: clean, focused, no bloat.
-
-The module is clean by design: that's what makes it the right choice, not bloat and gimmicks like others. With a clean webUI that gives you the best experience.
+Getting strong integrity, TEESimulator management, detection solve. Clean, focused, no bloat.
 
 [Download](https://github.com/dpejoh/specter/releases/latest)
 
 ## Background
 
-Specter is a complete rewrite of what I originally built as Yurikey. After the rewrite was turned down by Yuri, I went my own way.
+Specter is a complete rewrite of what I originally built as Yurikey.
 
 ## Support
-
-If Specter helps you out, consider supporting the project:
 
 - Ko-fi: [ko-fi.com/dpejoh](https://ko-fi.com/dpejoh)
 - PayPal: dpejoh@atomicmail.io
@@ -33,25 +28,37 @@ If Specter helps you out, consider supporting the project:
 
 ## Quick start
 
-1. Install any PIF fork such as [Play Integrity Fix](https://github.com/KOWX712/PlayIntegrityFix/releases/latest) or [Play Integrity Fork](https://github.com/osm0sis/PlayIntegrityFork/releases/latest)
-2. Install [Tricky Store](https://github.com/5ec1cff/TrickyStore/releases/latest) or any fork such as [TEESimulator](https://github.com/JingMatrix/TEESimulator) or [TEESimulator-RS](https://github.com/Enginex0/TEESimulator-RS)
+1. Install [Tricky Store](https://github.com/5ec1cff/TrickyStore/releases/latest) or a fork
+2. Install any PIF fork
 3. Install Specter via Magisk / KernelSU / APatch
-4. Open the WebUI and configure as you like
+4. Reboot. First-boot runs backup, target, security patch, keybox.
+5. Open the WebUI
 
 ## Features
 
-- **Keybox**: multi-source catalog, custom keybox (file/URL/path), Google revocation checking, private keybox support, backup and restore
-- **Tools**: target.txt, App Targeting (per-app states + blacklist), security patch with live fetch from source.android.com, TEESimulator support, GMS kill, PIF fix, HMA-OSS / Zygisk Next configs, detection cleanup, Widevine L1
-- **Control**: per-feature toggles (boot hardening, boot state props, bootloader spoofer block, ROM spoof blocking, LSPosed clean, recovery hide, action pipeline steps), automatic conflict resolution (aggressive: TSupport-Advance/Yurikey/Integrity Box disabled; passive: TreatWheel/NoHello/Sensitive Props coexist)
-- **Settings**: theme (dark/light/auto + 9 color presets + Monet), language, dev mode with terminal, project contributors
+- **Keybox**: multi-source catalog, custom keybox, Google revocation, backup/restore
+- **Auto Target**: inotify + polling for new apps
+- **App Targeting**: per-app states, TEE-aware suffixes, blacklist
+- **Security Patch**: live fetch with offline fallback
+- **TEE & Boot Hash**: TEE status/tier, vbmeta digest, boot hash
+- **ROM Fingerprint**: cleans custom ROM props and prefixes
+- **ADB Disabler**: dev options, USB debugging, OEM unlock
+- **PIF**: auto-detect variant, fetch fingerprint, block spoof engines
+- **GMS Kill**: force-stops DroidGuard/GMS, clears Play Store
+- **Module Configs**: HMA-OSS/HMA/HMAL, Zygisk Next
+- **Detection Cleanup**: removes detector logs, temp dirs, caches
+- **Widevine L1**: attestation keys via KmInstallKeybox
+- **Conflict Resolution**: 7 modules — aggressive disabled, passive coexists
+- **Scheduler**: periodic keybox info, auto-target, autopif
+- **First-Boot**: backup originals, run full pipeline once
 
 ## Requirements
 
 - Root access (Magisk / KernelSU / APatch)
-- Tricky Store
-- Play Integrity Fix or any fork (recommended)
+- Tricky Store or fork
+- Play Integrity Fix or fork (recommended)
 
-## Build from source
+## Build
 
 ```bash
 git clone https://github.com/dpejoh/specter
@@ -65,32 +72,17 @@ Output: `Specter-v{version}.zip`
 ### Testing
 
 ```bash
-# Shell tests (boot scripts, features)
-bash tests/run.sh
-
-# Unit tests (vitest, happy-dom)
-npm test
-
-# Unit tests with coverage report
-npm run test:coverage
-
-# E2E browser smoke tests (Playwright)
-npm run test:e2e
-
-# TypeScript type check
-npx tsc --noEmit
+bash tests/run.sh          # Shell tests. 6 files, 67 assertions.
+npm test                   # TS tests. 9 files, 86 tests (vitest + happy-dom).
+npx tsc --noEmit           # TypeScript strict check
 ```
 
-Shell tests validate boot scripts and feature behavior in a mock environment (112 tests). TypeScript unit tests cover the WebUI bridge, config layer, toast, colour utilities, and helpers (84 tests). E2E tests verify the built HTML loads correctly in a real browser.
+### CI
 
-CI enforces:
-- TypeScript strict compilation (`tsc --noEmit`)
-- ShellCheck linting (severity: warning)
-- Shell test suite (16 tests)
-- TypeScript test suite (65+ tests, vitest + happy-dom)
+- TypeScript strict, ShellCheck (warning), shell tests, TS tests
 - Module structure verification
 - No hardcoded `/data/adb/modules/Specter` paths in lib/ or features/
-- No `su -c` usage in feature scripts
+- No `su -c` in feature scripts
 
 ## Legal
 
@@ -111,11 +103,12 @@ ALWAYS MAINTAIN BACKUPS OF IMPORTANT DATA.
 
 ## Thanks
 
-- [chiteroman](https://github.com/chiteroman/PlayIntegrityFix), [KOWX712](https://github.com/KOWX712/PlayIntegrityFix) and [osm0sis](https://github.com/osm0sis/PlayIntegrityFork) — pif.ts and its forks
-- [vvb2060](https://github.com/vvb2060/KeyAttestation) — KeyAttestation
-- [5ec1cff](https://github.com/5ec1cff/TrickyStore), [JingMatrix](https://github.com/JingMatrix/TEESimulator) and [Enginex0](https://github.com/Enginex0/TEESimulator-RS) — Tricky Store and its forks
-- [KOWX712](https://github.com/KOWX712/Tricky-Addon-Update-Target-List) — Tricky Store Addon
-- [Citra-Standalone](https://github.com/Citra-Standalone/TSupport-Advance) — TSupport-Advance
+- [chiteroman](https://github.com/chiteroman/PlayIntegrityFix), [KOWX712](https://github.com/KOWX712/PlayIntegrityFix) and [osm0sis](https://github.com/osm0sis/PlayIntegrityFork). PIF and forks.
+- [5ec1cff](https://github.com/5ec1cff/TrickyStore), [JingMatrix](https://github.com/JingMatrix/TEESimulator), [Enginex0](https://github.com/Enginex0/TEESimulator-RS). Tricky Store and forks.
+- [KOWX712](https://github.com/KOWX712/Tricky-Addon-Update-Target-List), [Enginex0](https://github.com/Enginex0/tricky-addon-enhanced). Tricky Store Addon.
+- [vvb2060](https://github.com/vvb2060/KeyAttestation). KeyAttestation.
+- [eltavine](https://github.com/eltavine/Duck-Detector-Refactoring). Duck Detector.
+- [Citra-Standalone](https://github.com/Citra-Standalone/TSupport-Advance). TSupport-Advance.
 
 ## License
 
