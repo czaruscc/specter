@@ -125,6 +125,11 @@ async function resolvePackageNames(packages: string[]): Promise<Map<string, stri
 
 function buildOverlayHTML(): string {
   return `
+    <div class="ptr-indicator" id="ptr-indicator">
+      <div class="ptr-progress-wrap">
+        <md-icon id="ptr-arrow" class="ptr-arrow">refresh</md-icon>
+      </div>
+    </div>
     <div class="ta-header">
       <button id="ta-back" class="ta-back-btn">
         <md-icon>arrow_back</md-icon>
@@ -175,14 +180,14 @@ function buildOverlayHTML(): string {
 
     <div class="ta-list" id="ta-list"></div>
 
-    <md-fab id="ta-apply" class="ta-fab" label="${t('ta_apply', 'Apply')}">
-      <md-icon slot="icon">check</md-icon>
-    </md-fab>
-
     <div class="ta-loading" id="ta-loading">
       <md-circular-progress indeterminate></md-circular-progress>
       <p>${t('ta_loading', 'Loading apps...')}</p>
     </div>
+
+    <md-fab id="ta-apply" class="ta-fab" label="${t('ta_apply', 'Apply')}">
+      <md-icon slot="icon">check</md-icon>
+    </md-fab>
   `;
 }
 
@@ -582,6 +587,156 @@ export async function openTargetAppsManager() {
     }
   }
 
+  async function refreshApps() {
+    try {
+      defaultMode = (await cfgGet('target_default_mode', 'bare')) || 'bare';
+      const [targetResult, pkgs] = await Promise.all([
+        exec(`cat ${TRICKY_DIR}/target.txt 2>/dev/null || echo ""`),
+        fetchUserPackages(),
+      ]);
+
+      const targetLines = targetResult.stdout.split('\n').map(s => s.trim()).filter(Boolean);
+      targetMap.clear();
+      for (const line of targetLines) {
+        if (line.endsWith('!')) targetMap.set(line.slice(0, -1), 'force');
+        else if (line.endsWith('?')) targetMap.set(line.slice(0, -1), 'conditional');
+        else targetMap.set(line, 'bare');
+      }
+
+      const labelMap = await resolvePackageNames(pkgs);
+
+      apps = pkgs.map(pkg => ({
+        packageName: pkg,
+        appName: labelMap.get(pkg) || pkg,
+        state: targetMap.get(pkg) || 'unchecked',
+      }));
+
+      appendToOutput(`[TARGET] Refreshed ${apps.length} user apps, ${targetMap.size} in target.txt`);
+      applyFilters();
+    } catch (e) {
+      appendToOutput(`[TARGET] Refresh failed: ${e}`, true);
+    }
+  }
+
+  function setupPullToRefresh() {
+    const THRESHOLD = 80;
+    const MAX_PULL = 200;
+    const RESISTANCE = 0.5;
+
+    const ptrList = overlay.querySelector('#ta-list') as HTMLElement;
+    const indicator = overlay.querySelector('#ptr-indicator') as HTMLElement;
+    const arrow = overlay.querySelector('#ptr-arrow') as HTMLElement;
+
+    let startY = 0;
+    let pulling = false;
+    let triggered = false;
+
+    function setIndicatorPull(pull: number) {
+      indicator.style.transform = `translateY(${-80 + pull}px)`;
+    }
+
+    function resetIndicator() {
+      indicator.style.transform = '';
+      indicator.style.opacity = '0';
+    }
+
+    function doEnd() {
+      pulling = false;
+      indicator.classList.remove('ptr-dragging');
+
+      const m = (indicator.style.transform || '').match(/translateY\(([-\d.]+)px\)/);
+      const currentY = m ? parseFloat(m[1] ?? '') : -80;
+      const pull = currentY + 80;
+
+      if (pull >= THRESHOLD && !triggered) {
+        triggered = true;
+        arrow.style.display = 'none';
+        indicator.style.transform = 'translateY(0px)';
+        indicator.style.opacity = '1';
+        refreshApps().then(() => {
+          arrow.style.display = '';
+          resetIndicator();
+          triggered = false;
+        });
+      } else {
+        resetIndicator();
+        arrow.style.transform = '';
+      }
+    }
+
+    function doCancel() {
+      pulling = false;
+      indicator.classList.remove('ptr-dragging');
+      resetIndicator();
+      arrow.style.transform = '';
+    }
+
+    const isTouch = 'ontouchstart' in window;
+
+    // Touch events (mobile)
+    const onTouchStart = (e: TouchEvent) => {
+      if (ptrList.scrollTop > 0 || triggered || e.touches.length !== 1) return;
+      startY = e.touches[0]!.clientY;
+      pulling = true;
+      indicator.classList.add('ptr-dragging');
+      e.preventDefault();
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!pulling || e.touches.length !== 1) return;
+      const dy = e.touches[0]!.clientY - startY;
+      if (dy < 0) {
+        doCancel();
+        return;
+      }
+      const pull = Math.min(dy * RESISTANCE, MAX_PULL);
+      const pct = Math.min(pull / THRESHOLD, 1);
+
+      indicator.style.opacity = String(pct);
+      setIndicatorPull(pull);
+      arrow.style.transform = `rotate(${pct * 360}deg)`;
+      e.preventDefault();
+    };
+    const onTouchEnd = () => { doEnd(); };
+
+    // Pointer events (desktop fallback)
+    const onPointerDown = (e: PointerEvent) => {
+      if (isTouch) return;
+      if (ptrList.scrollTop > 0 || triggered) return;
+      startY = e.clientY;
+      pulling = true;
+      indicator.classList.add('ptr-dragging');
+      ptrList.setPointerCapture(e.pointerId);
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      if (!pulling || isTouch) return;
+      const dy = e.clientY - startY;
+      if (dy < 0) {
+        doCancel();
+        return;
+      }
+      const pull = Math.min(dy * RESISTANCE, MAX_PULL);
+      const pct = Math.min(pull / THRESHOLD, 1);
+
+      indicator.style.opacity = String(pct);
+      setIndicatorPull(pull);
+      arrow.style.transform = `rotate(${pct * 360}deg)`;
+    };
+    const onPointerEnd = () => { if (!isTouch) doEnd(); };
+    const onPointerCancel = () => { if (!isTouch) doCancel(); };
+
+    if (isTouch) {
+      ptrList.addEventListener('touchstart', onTouchStart, { passive: false });
+      ptrList.addEventListener('touchmove', onTouchMove, { passive: false });
+      ptrList.addEventListener('touchend', onTouchEnd);
+      ptrList.addEventListener('touchcancel', doCancel);
+    } else {
+      ptrList.addEventListener('pointerdown', onPointerDown);
+      ptrList.addEventListener('pointermove', onPointerMove);
+      ptrList.addEventListener('pointerup', onPointerEnd);
+      ptrList.addEventListener('pointercancel', onPointerCancel);
+    }
+  }
+
   function renderList() {
     list.innerHTML = '';
     const fragment = document.createDocumentFragment();
@@ -777,6 +932,7 @@ export async function openTargetAppsManager() {
 
   window.addEventListener('popstate', closeOverlay);
 
+  setupPullToRefresh();
   await loadData();
 }
 
