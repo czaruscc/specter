@@ -98,12 +98,19 @@ async function shellExec(cmd: string): Promise<{ stdout: string }> {
 }
 
 async function fetchUserPackages(): Promise<string[]> {
+  const pkgSet = new Set<string>();
   const ksu = ksuGlobal();
   if (typeof ksu?.listPackages === 'function') {
-    try { return JSON.parse(ksu.listPackages('user')) as string[]; } catch {}
+    try {
+      const list = JSON.parse(ksu.listPackages('user')) as string[];
+      for (const p of list) pkgSet.add(p);
+    } catch {}
   }
   const r = await shellExec('pm list packages -3 2>/dev/null | cut -d: -f2');
-  return r.stdout.split('\n').map(s => s.trim()).filter(Boolean);
+  for (const pkg of r.stdout.split('\n').map(s => s.trim()).filter(Boolean)) {
+    pkgSet.add(pkg);
+  }
+  return [...pkgSet];
 }
 
 async function resolvePackageNames(packages: string[]): Promise<Map<string, string>> {
@@ -113,8 +120,19 @@ async function resolvePackageNames(packages: string[]): Promise<Map<string, stri
     try {
       const raw = ksu.getPackagesInfo(JSON.stringify(packages));
       const list = JSON.parse(raw) as Array<{ packageName: string; appLabel?: string }>;
+      const missing: string[] = [];
       for (let i = 0; i < packages.length; i++) {
-        map.set(packages[i]!, list[i]?.appLabel || packages[i]!);
+        if (list[i]?.appLabel) {
+          map.set(packages[i]!, list[i]!.appLabel!);
+        } else {
+          missing.push(packages[i]!);
+        }
+      }
+      if (missing.length > 0) {
+        await Promise.all(missing.map(async (pkg) => {
+          const r = await shellExec(`dumpsys package ${pkg} 2>/dev/null | grep -m1 'applicationInfo=' | sed 's/.*label=//' | sed 's/ [a-zA-Z0-9_.-]*=.*//' | tr -d '\\n'`);
+          map.set(pkg, r.stdout.trim() || pkg);
+        }));
       }
       return map;
     } catch {}
@@ -571,14 +589,6 @@ export async function openTargetAppsManager() {
 
       const labelMap = await resolvePackageNames(pkgs);
 
-      const pkgSet = new Set(pkgs);
-      for (const pkg of targetMap.keys()) {
-        if (!pkgSet.has(pkg)) {
-          pkgs.push(pkg);
-          pkgSet.add(pkg);
-        }
-      }
-
       apps = pkgs.map(pkg => ({
         packageName: pkg,
         appName: labelMap.get(pkg) || pkg,
@@ -612,14 +622,6 @@ export async function openTargetAppsManager() {
       }
 
       const labelMap = await resolvePackageNames(pkgs);
-
-      const pkgSet = new Set(pkgs);
-      for (const pkg of targetMap.keys()) {
-        if (!pkgSet.has(pkg)) {
-          pkgs.push(pkg);
-          pkgSet.add(pkg);
-        }
-      }
 
       apps = pkgs.map(pkg => ({
         packageName: pkg,
