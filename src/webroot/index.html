@@ -7,15 +7,9 @@
   <meta name="color-scheme" content="dark light" />
   <title data-i18n="app_title">Specter</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://rawbin.dpejoh.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons"
-        media="print" onload="this.media='all';this.onload=null"
-        onerror="this.onerror=null;this.href='assets/material-icons.css'" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined"
-        media="print" onload="this.media='all';this.onload=null"
-        onerror="this.onerror=null;this.href='assets/material-icons-outlined.css'" />
+  <link rel="stylesheet" href="assets/material-icons.css" />
+  <link rel="stylesheet" href="assets/material-icons-outlined.css" />
   <link rel="stylesheet" href="css/app.css" />
 
   <script>
@@ -114,13 +108,15 @@
   <div class="app-layout">
 
     <header class="app-top-bar" id="top-bar">
-      <h1 class="md-typescale-headline-medium app-title" data-i18n="app_title">Specter</h1>
-      <div class="spacer"></div>
-      <span id="network-chip" class="network-chip">
-        <md-icon aria-hidden="true">wifi</md-icon>
-        <span id="network-label" data-i18n="home_status_online">Online</span>
-      </span>
-      <span id="network-announce" aria-live="polite" class="sr-only"></span>
+      <div class="app-top-bar-inner">
+        <h1 class="md-typescale-headline-medium app-title" data-i18n="app_title">Specter</h1>
+        <div class="spacer"></div>
+        <span id="network-chip" class="network-chip">
+          <md-icon aria-hidden="true">wifi</md-icon>
+          <span id="network-label" data-i18n="home_status_online">Online</span>
+        </span>
+        <span id="network-announce" aria-live="polite" class="sr-only"></span>
+      </div>
     </header>
 
     <main>
