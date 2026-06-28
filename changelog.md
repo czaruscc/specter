@@ -1,4 +1,4 @@
-# v1.4.4-16
+# v1.4.4-17
 
 **New**
 - Conflict system: 3-tier (aggressive/moderate/passive), data-driven from conflicts.txt
