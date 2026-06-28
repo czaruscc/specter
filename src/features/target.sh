@@ -41,7 +41,8 @@ case "${1}" in
     if [ -n "$_denylist" ]; then
       for _pkg in $_denylist; do
         [ -z "$_pkg" ] && continue
-        _append_missing "$_pkg"
+        _compute_suffix "$_pkg"
+        _append_missing "${_pkg}${_suffix}"
       done
       unset _pkg
     fi
@@ -76,7 +77,7 @@ case "${1}" in
       while read -r pkg; do
         [ -z "$pkg" ] && continue
         _compute_suffix "$pkg"
-        _append_missing "${pkg}"
+        _append_missing "${pkg}${_suffix}"
       done < "$TEMP_PKGS"
       rm -f "$TEMP_PKGS" "${TEMP_PKGS}.filtered"
     fi
