@@ -6,7 +6,7 @@ MODDIR=${0%/*}
 log_i "TEE" "Starting TEE status check"
 
 # If a cached result exists, just log and exit
-if [ -f "$TEE_STATUS" ] && [ ! -f "$SPECTER_DIR/tee_reported" ]; then
+if [ -f "$TEE_STATUS" ] && [ ! -f "$SPECTER_DIR/.first_boot_pending" ]; then
   _b=$(grep -E '^(tee_broken|tee_fallback)=' "$TEE_STATUS" 2>/dev/null | cut -d= -f2)
   case "$_b" in
     true)  _bs="Broken" ;;
@@ -45,7 +45,6 @@ fi
 
 sleep 5
 /system/bin/app_process -Djava.class.path="$_dex" / com.dpejoh.specter.Main "$SPECTER_DIR" 2>&1 || true
-rm -f "$SPECTER_DIR/tee_reported"
 unset _dex
 
 if [ -f "$TEE_STATUS" ]; then

@@ -25,7 +25,7 @@ _pif_validate_fingerprint() {
 }
 
 _first_boot=0
-[ -f "$SPECTER_DIR/pif_reported" ] && _first_boot=1
+[ -f "$SPECTER_DIR/.first_boot_pending" ] && _first_boot=1
 
 {
   log_i "ACTION" "Running full integrity pipeline"
@@ -33,7 +33,11 @@ _first_boot=0
   _feature_should_run "gms" && {
     log_u "ACTION" ""
     log_u "ACTION" "-> Play Store:"
-    sh "$MODDIR/features/kill_play_store.sh" || true
+    if [ -f "$SPECTER_DIR/.first_boot_pending" ]; then
+      log_i "ACTION" "First boot, skipping Play Store data clear"
+    else
+      sh "$MODDIR/features/kill_play_store.sh" || true
+    fi
   }
 
   _feature_should_run "target" && {
@@ -55,11 +59,12 @@ _first_boot=0
   }
 
   if _feature_should_run "pif"; then
+    log_u "ACTION" ""
+    log_u "ACTION" "-> Play Integrity Fix:"
     _pif_name=$(_pif_prop) || _pif_name=""
     if [ -z "$_pif_name" ]; then
-      if [ -f "$SPECTER_DIR/pif_reported" ]; then
-        log_i "ACTION" "PIF not found, first boot suppress (pif_reported token consumed)"
-        rm -f "$SPECTER_DIR/pif_reported"
+      if [ -f "$SPECTER_DIR/.first_boot_pending" ]; then
+        log_i "ACTION" "PIF not found, first boot suppress"
       elif [ -t 1 ]; then
         log_u "ACTION" ""
         log_u "ACTION" "PIF not found — Press Volume UP to install, DOWN to skip..."
@@ -76,7 +81,7 @@ _first_boot=0
       else
         log_w "ACTION" "PIF not found, auto-install skipped (run from terminal or install manually)"
       fi
-    elif [ -f "$SPECTER_DIR/pif_reported" ]; then
+    elif [ -f "$SPECTER_DIR/.first_boot_pending" ]; then
       log_u "ACTION" ""
       log_u "ACTION" "PIF found, first boot - checking existing fingerprint validity"
       if _pif_validate_fingerprint; then
@@ -85,7 +90,6 @@ _first_boot=0
         log_i "ACTION" "Fingerprint invalid or missing, fetching new"
         sh "$MODDIR/features/pif.sh" || true
       fi
-      rm -f "$SPECTER_DIR/pif_reported"
       _pif_skip=1
     fi
     unset _pif_name

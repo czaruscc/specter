@@ -67,7 +67,8 @@ fi
 unset _ts_name
 
 # Mark first-boot setup as pending (runs once after reboot in service.sh)
-touch "$MODPATH/.first_boot_pending"
+mkdir -p "$SPECTER_DIR"
+touch "$SPECTER_DIR/.first_boot_pending"
 
 mkdir -p "$MODPATH/webroot/json"
 echo "{\"MODDIR\": \"$MODPATH\", \"SPECTER_DIR\": \"$SPECTER_DIR\"}" > "$MODPATH/webroot/json/module_paths.json"
@@ -75,11 +76,6 @@ echo "{\"MODDIR\": \"$MODPATH\", \"SPECTER_DIR\": \"$SPECTER_DIR\"}" > "$MODPATH
 # Backup module.prop for description override system
 cp "$MODPATH/module.prop" "$MODPATH/module.prop.bak"
 
-# Mark TEE for first-boot check (removed by service.sh after running)
-mkdir -p "$SPECTER_DIR"
-echo "1" > "$SPECTER_DIR/tee_reported"
-echo "1" > "$SPECTER_DIR/rom_spoof_reported"
-echo "1" > "$SPECTER_DIR/pif_reported"
 rm -f "$SPECTER_DIR/tee_status" "$SPECTER_DIR/tee_bhash" "$SPECTER_DIR/tee_tier" 2>/dev/null || true
 unset _pif_name
 
