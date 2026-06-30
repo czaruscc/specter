@@ -4,6 +4,12 @@ MODDIR=${0%/*}
 . "$MODDIR/lib/common.sh"
 export ROOT_SOL
 
+# Remove first-boot token immediately on EVERY boot so it never
+# persists if we crash/hang before the first-boot block
+_specter_first_boot=0
+[ -f "$SPECTER_DIR/.first_boot_pending" ] && { _specter_first_boot=1; rm -f "$SPECTER_DIR/.first_boot_pending"; }
+export SPECTER_FIRST_BOOT=$_specter_first_boot
+
 BOOT_LOG="$SPECTER_DIR/log/boot.log"
 mkdir -p "$SPECTER_DIR/log" 2>/dev/null || true
 log_rotate "$BOOT_LOG"
@@ -74,10 +80,9 @@ unset _bf _bf_default
 log_i "SERVICE" "Boot-time features done"
 
 ensure_dir "$SPECTER_DIR/backup" 2>/dev/null || true
-if [ -f "$SPECTER_DIR/.first_boot_pending" ]; then
+if [ "$_specter_first_boot" = "1" ]; then
   log_i "SERVICE" "First-boot setup pending, running..."
-  sh "$MODDIR/features/first_boot_setup.sh" >"$SPECTER_DIR/log/first_boot_setup.log" 2>&1 || log_e "SERVICE" "First-boot setup failed"
-  rm -f "$SPECTER_DIR/.first_boot_pending"
+  SPECTER_FIRST_BOOT=1 sh "$MODDIR/features/first_boot_setup.sh" >"$SPECTER_DIR/log/first_boot_setup.log" 2>&1 || log_e "SERVICE" "First-boot setup failed"
   log_i "SERVICE" "First-boot setup complete"
 fi
 

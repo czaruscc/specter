@@ -29,6 +29,22 @@ export async function initTheme(savedMode: string) {
   }
 
   wireThemeControls();
+
+  // When user returns to the tab, re-fetch monet.json (written by background inotifyd)
+  if (currentPreset === 'monet') {
+    document.addEventListener('visibilitychange', async () => {
+      if (document.hidden || !monetSeed) return;
+      const res = await fetch('./json/monet.json?ts=' + Date.now());
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.seed && data?.ts && data.ts > (Number(localStorage.getItem('monet_seed_ts')) || 0)) {
+        localStorage.setItem('monet_seed', data.seed);
+        localStorage.setItem('monet_seed_ts', String(data.ts));
+        monetSeed = data.seed;
+        applyMonetPreset(document.documentElement.getAttribute('data-theme') || 'dark');
+      }
+    });
+  }
 }
 
 export async function initThemeUI() {
@@ -138,6 +154,28 @@ function applyNamedPreset(name: string, isDark: boolean) {
 }
 
 async function extractMonetColor(): Promise<string | null> {
+  // Consume preloaded monet.json from background inotifyd handler (zero shell exec)
+  const preloaded = (window as any).__monetPromise;
+  if (preloaded && typeof preloaded?.then === 'function') {
+    try {
+      const data = await preloaded;
+      if (data?.seed && data?.ts) {
+        const cachedTs = localStorage.getItem('monet_seed_ts');
+        if (!cachedTs || data.ts > Number(cachedTs)) {
+          localStorage.setItem('monet_seed', data.seed);
+          localStorage.setItem('monet_seed_ts', String(data.ts));
+          return data.seed;
+        }
+      }
+    } catch {}
+  }
+
+  // Background handler file not available — check localStorage cache
+  try {
+    const cached = localStorage.getItem('monet_seed');
+    const ts = localStorage.getItem('monet_seed_ts');
+    if (cached && ts) return cached;
+  } catch {}
   try {
     const cmd = [
       `cmd overlay lookup com.android.systemui android:color/system_accent1_500 2>/dev/null`,
@@ -163,7 +201,10 @@ async function extractMonetColor(): Promise<string | null> {
 
     if (argb && !isNaN(argb)) {
       const seed = '#' + (argb & 0x00FFFFFF).toString(16).padStart(6, '0');
-      if (seed !== '#000000') return seed;
+      if (seed !== '#000000') {
+        try { localStorage.setItem('monet_seed', seed); localStorage.setItem('monet_seed_ts', String(Date.now())); } catch {}
+        return seed;
+      }
     }
   } catch (e) {
     console.warn('Failed to extract monet color:', e);

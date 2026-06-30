@@ -19,13 +19,19 @@ export async function refreshDevice(): Promise<InfoJson | null> {
   } catch (e) {
     console.warn('Device info script failed:', e);
   }
-  const data = await fetchJson<InfoJson>(API_URLS.INFO!);
+  const preloaded = (window as any).__infoPromise;
+  const data = preloaded && typeof preloaded?.then === 'function'
+    ? await preloaded
+    : await fetchJson<InfoJson>(API_URLS.INFO!);
   if (data) applyAllDeviceInfo(data);
   return data;
 }
 
 export async function refreshKeyboxStatus(): Promise<KeyboxInfoJson | null> {
-  const diskData = await fetchJson<KeyboxInfoJson>(API_URLS.KEYBOX_INFO!);
+  const preloaded = (window as any).__keyboxInfoPromise;
+  const diskData = preloaded && typeof preloaded?.then === 'function'
+    ? await preloaded
+    : await fetchJson<KeyboxInfoJson>(API_URLS.KEYBOX_INFO!);
   if (diskData) applyKeyboxStatus(diskData);
   return diskData;
 }

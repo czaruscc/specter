@@ -44,7 +44,7 @@ if [ ! -f "$_dex" ]; then
 fi
 
 sleep 5
-/system/bin/app_process -Djava.class.path="$_dex" / com.dpejoh.specter.Main "$SPECTER_DIR" 2>&1 || true
+timeout 15 /system/bin/app_process -Djava.class.path="$_dex" / com.dpejoh.specter.Main "$SPECTER_DIR" 2>&1 || true
 unset _dex
 
 if [ -f "$TEE_STATUS" ]; then

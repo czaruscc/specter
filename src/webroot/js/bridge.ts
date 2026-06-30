@@ -5,6 +5,13 @@ import type { ModulePaths, ScriptResult, ExecResult, PackageInfo, ChildProcess }
 let MODULE: ModulePaths | null = null;
 
 export async function initBridge(): Promise<void> {
+  const preloaded = (window as any).__modulePathsPromise;
+  if (preloaded && typeof preloaded?.then === 'function') {
+    try {
+      const data = await preloaded;
+      if (data?.MODDIR) { MODULE = data; MODULE.MODDIR = MODULE.MODDIR.replace('/modules_update/', '/modules/'); return; }
+    } catch {}
+  }
   try {
     const r = await fetch('/json/module_paths.json');
     MODULE = await r.json() as ModulePaths;
