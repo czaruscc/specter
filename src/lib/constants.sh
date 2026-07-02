@@ -31,6 +31,14 @@ FALLBACK_KEYBOXES="Yuri/8"
 : "${GMS_PROPS_FILE:=/data/system/gms_certified_props.json}"
 : "${BACKUP_DIR:=$SPECTER_DIR/backup}"
 
+# -- OhMyKeymint (OMK) paths (defaults, overridable by env) --
+: "${OMK_MODULE:=$MODULES_BASE/OhMyKeymint}"
+: "${OMK_DIR:=/data/misc/keystore/omk}"
+: "${OMK_KEYBOX:=$OMK_DIR/keybox.xml}"
+: "${OMK_INJECTOR:=$OMK_DIR/injector.toml}"
+: "${OMK_CONFIG:=$OMK_DIR/config.toml}"
+: "${OMK_RESTART_DIR:=/data/adb/omk}"
+
 # -- Package lists --
 GMS_APPS="com.android.vending com.google.android.gsf com.google.android.gms com.google.android.contactkeys com.google.android.ims com.google.android.safetycore com.google.android.apps.walletnfcrel com.google.android.apps.nbu.paisa.user"
 FIXED_TARGETS="android $GMS_APPS"

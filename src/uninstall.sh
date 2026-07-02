@@ -3,9 +3,10 @@ set -e
 MODDIR=${0%/*}
 . "$MODDIR/lib/common.sh"
 
-if [ -f "$BACKUP_FILE" ]; then
-    rm -f "$TARGET_FILE"
-    mv "$BACKUP_FILE" "$TARGET_FILE" || true
+detect_keystore_manager
+if [ -f "$BACKUP_FILE" ] && [ -n "$KSM_KEYBOX" ]; then
+    rm -f "$KSM_KEYBOX"
+    mv "$BACKUP_FILE" "$KSM_KEYBOX" || true
     log_i "UNINSTALL" "Restored original keybox from backup"
 fi
 

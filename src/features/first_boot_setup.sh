@@ -8,27 +8,39 @@ log_i "FIRST_BOOT" "Starting first-boot setup"
 
 ensure_dir "$BACKUP_DIR"
 
-log_i "FIRST_BOOT" "Backing up existing Tricky Store files"
+detect_keystore_manager
 
-if [ -f "$TARGET_FILE" ]; then
-  cp "$TARGET_FILE" "$BACKUP_DIR/keybox.xml.bak"
-  log_d "FIRST_BOOT" "Backed up $TARGET_FILE"
+log_i "FIRST_BOOT" "Backing up existing $KSM_NAME files"
+
+if [ -f "$KSM_KEYBOX" ]; then
+  cp "$KSM_KEYBOX" "$BACKUP_DIR/keybox.xml.bak"
+  log_d "FIRST_BOOT" "Backed up $KSM_KEYBOX"
 fi
 
-if [ -f "$TARGET_TXT" ]; then
-  cp "$TARGET_TXT" "$BACKUP_DIR/target.txt.bak"
-  log_d "FIRST_BOOT" "Backed up $TARGET_TXT"
-fi
-
-if [ -f "$LOCKED_FILE" ]; then
-  cp "$LOCKED_FILE" "$BACKUP_DIR/locked.xml.bak"
-  log_d "FIRST_BOOT" "Backed up $LOCKED_FILE"
-fi
-
-if [ -f "$SECURITY_PATCH_FILE" ]; then
-  cp "$SECURITY_PATCH_FILE" "$BACKUP_DIR/security_patch.txt.bak"
-  log_d "FIRST_BOOT" "Backed up $SECURITY_PATCH_FILE"
-fi
+case "$KSM_FORMAT" in
+  toml)
+    # injector.toml/config.toml carry OMK settings beyond what Specter
+    # manages, so back up only the values Specter owns, not the whole file.
+    ksm_read_targets > "$BACKUP_DIR/targets.list.bak" 2>/dev/null
+    _fbs_patch=$(sh "$MODDIR/security_patch.sh" --get 2>/dev/null) || _fbs_patch=""
+    [ -n "$_fbs_patch" ] && printf '%s\n' "$_fbs_patch" > "$BACKUP_DIR/security_patch.value.bak"
+    unset _fbs_patch
+    ;;
+  *)
+    if [ -f "$KSM_TARGETS" ]; then
+      cp "$KSM_TARGETS" "$BACKUP_DIR/target.txt.bak"
+      log_d "FIRST_BOOT" "Backed up $KSM_TARGETS"
+    fi
+    if [ -f "$KSM_LOCKED" ]; then
+      cp "$KSM_LOCKED" "$BACKUP_DIR/locked.xml.bak"
+      log_d "FIRST_BOOT" "Backed up $KSM_LOCKED"
+    fi
+    if [ -f "$KSM_SECURITY" ]; then
+      cp "$KSM_SECURITY" "$BACKUP_DIR/security_patch.txt.bak"
+      log_d "FIRST_BOOT" "Backed up $KSM_SECURITY"
+    fi
+    ;;
+esac
 
 log_i "FIRST_BOOT" "Waiting for network..."
 for _sec in 1 2 3 4 5 6 7 8 9 10; do check_network 2>/dev/null && break; sleep 1; done

@@ -6,7 +6,8 @@ MODDIR=${0%/*}
 
 log_i "KEYBOX_INFO" "Starting keybox info check"
 
-KEYBOX_FILE="$TRICKY_DIR/keybox.xml"
+detect_keystore_manager
+KEYBOX_FILE="$KSM_KEYBOX"
 INFO_PATH="$MODDIR/../webroot/json/keybox_info.json"
 
 ensure_dir "$(dirname "$INFO_PATH")"

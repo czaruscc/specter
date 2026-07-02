@@ -7,24 +7,39 @@ MODDIR=${0%/*}
 
 log_d "TARGET" "Starting target management"
 
-[ -d "$TRICKY_DIR" ] || die "Tricky Store data directory not found"
+detect_keystore_manager
+ksm_available || die "No keystore manager (Tricky Store / OhMyKeymint) data directory found"
+
+case "${1:-}" in
+  --list)
+    ksm_read_targets
+    exit 0
+    ;;
+  --set)
+    [ -n "${2:-}" ] && [ -f "$2" ] || die "target.sh --set requires an existing file argument"
+    ksm_commit_targets "$2"
+    log_i "TARGET" "Committed target list from $2"
+    exit 0
+    ;;
+esac
 
 MODULE_ROOT="${MODDIR%/features}"
 TEMP_PKGS="$MODULE_ROOT/pkgs.txt"
-_TMP_TARGET="${TARGET_TXT}.new.$$"
+_TMP_TARGET="$SPECTER_DIR/.target_new.$$"
 
 _read_tee_status
 _ensure_blacklist
 _parse_customize
 
 _ensure_target_txt() {
-  [ -f "$TARGET_TXT" ] && [ -s "$TARGET_TXT" ] && return 0
-  log_w "TARGET" "target.txt missing or empty, creating default"
-  mkdir -p "$(dirname "$TARGET_TXT")" 2>/dev/null || true
+  [ -n "$(ksm_read_targets)" ] && return 0
+  log_w "TARGET" "target list missing or empty, creating default"
+  _et_tmp="$SPECTER_DIR/.target_seed.$$"
   for _entry in $FIXED_TARGETS; do
     echo "$_entry"
-  done > "$TARGET_TXT"
-  unset _entry
+  done > "$_et_tmp"
+  ksm_commit_targets "$_et_tmp"
+  unset _entry _et_tmp
 }
 
 _ensure_target_txt
@@ -121,12 +136,10 @@ case "${1}" in
 
     sort -u "$_TMP_TARGET" -o "$_TMP_TARGET"
 
-    rm -f "${TARGET_TXT}.bak"
-    [ -f "$TARGET_TXT" ] && cp "$TARGET_TXT" "${TARGET_TXT}.bak"
-    mv -f "$_TMP_TARGET" "$TARGET_TXT"
+    ksm_commit_targets "$_TMP_TARGET"
 
-    _count=$(wc -l < "$TARGET_TXT")
-    log_i "TARGET" "Wrote $_count entries to target.txt"
+    _count=$(ksm_read_targets | wc -l)
+    log_i "TARGET" "Wrote $_count entries to target list"
     ;;
 esac
 

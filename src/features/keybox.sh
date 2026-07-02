@@ -8,7 +8,8 @@ log_d "KEYBOX" "Starting keybox fetch/install"
 
 check_network || { log_e "KEYBOX" "No internet connection"; exit 1; }
 
-[ -d "$TRICKY_DIR" ] || die "Tricky Store data directory not found"
+detect_keystore_manager
+ksm_available || die "No keystore manager (Tricky Store / OhMyKeymint) data directory found"
 
 DECODE_FILE="/data/local/tmp/keybox_decode.$$"
 TEMP_FILE="/data/local/tmp/keybox.tmp.$$"
@@ -28,7 +29,7 @@ if [ -n "$_custom_type" ] && [ -n "$_custom_value" ]; then
   case "$_custom_type" in
     file|path)
       if [ -f "$_custom_value" ]; then
-        cp "$_custom_value" "$TARGET_FILE" || die "Failed to copy custom keybox"
+        ksm_install_keybox "$_custom_value" copy || die "Failed to copy custom keybox"
         log_i "KEYBOX" "Custom keybox installed from $_custom_value"
         _clear_custom
         exit 0
@@ -45,7 +46,7 @@ download "$_custom_value" "$TEMP_FILE" || {
   exit 1
 }
 if decode_keybox_blob "$TEMP_FILE" "$DECODE_FILE" 2>/dev/null && [ -s "$DECODE_FILE" ]; then
-        mv "$DECODE_FILE" "$TARGET_FILE" || die "Failed to move decoded keybox"
+        ksm_install_keybox "$DECODE_FILE" || die "Failed to move decoded keybox"
         log_i "KEYBOX" "Custom keybox installed from URL"
         _clear_custom
         exit 0
@@ -219,12 +220,12 @@ _clear_keybox_id() {
 if _is_teesimulator; then
     _install_teesimulator
     _clear_keybox_id
-    cp "$DECODE_FILE" "$TARGET_FILE" 2>/dev/null || true
+    ksm_install_keybox "$DECODE_FILE" copy
     log_i "KEYBOX" "Keybox install complete"
     exit 0
 fi
 
-mv "$DECODE_FILE" "$TARGET_FILE" || die "Failed to move decoded keybox to $TARGET_FILE"
+ksm_install_keybox "$DECODE_FILE" || die "Failed to move decoded keybox to $KSM_KEYBOX"
 _clear_keybox_id
 log_i "KEYBOX" "Keybox installed successfully"
 log_i "KEYBOX" "Keybox install complete"

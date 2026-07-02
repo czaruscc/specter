@@ -3,10 +3,11 @@
 # Provides refresh_module_description() for boot-time and on-demand use.
 
 refresh_module_description() {
+  detect_keystore_manager
   _problems=""
 
-  if [ ! -d "$MODULES_BASE/tricky_store" ] && [ ! -d "${MODULES_BASE}_update/tricky_store" ]; then
-    _problems="🚨 Tricky Store not installed"
+  if [ "$KSM" = "none" ]; then
+    _problems="🚨 No keystore manager installed"
   fi
 
   _cf=""
@@ -30,11 +31,14 @@ refresh_module_description() {
     [ -z "$_kb_src" ] && _kb_src=$(cfg_get 'keybox_provider' '')
     [ -z "$_kb_src" ] && [ "$(cfg_get 'keybox_private' 'false')" = "true" ] && _kb_src="Private"
 
-    _apps=$(wc -l < "$TARGET_TXT" 2>/dev/null || echo 0)
-    _patch=$(grep -E '^(boot|all)=' "$SECURITY_PATCH_FILE" 2>/dev/null | cut -d= -f2) || true
+    _apps=$(ksm_read_targets 2>/dev/null | wc -l)
+    case "$KSM_FORMAT" in
+      toml) _patch=$(grep -E '^[ ]*security_patch[ ]*=' "$KSM_SECURITY" 2>/dev/null | head -1 | sed 's/.*=[ ]*"\([^"]*\)".*/\1/') ;;
+      *) _patch=$(grep -E '^(boot|all)=' "$KSM_SECURITY" 2>/dev/null | cut -d= -f2) ;;
+    esac
     [ -z "$_patch" ] && _patch="-"
 
-    if [ -f "$TARGET_FILE" ] || [ -f "$LOCKED_FILE" ]; then
+    if [ -f "$KSM_KEYBOX" ] || [ -f "$KSM_LOCKED" ]; then
       _title="$_kb_src${_kb_ver:+ $_kb_ver}"
       if [ -n "$_kb_rev" ]; then
         _new_desc="🔑 $_title · ❌ | $_apps apps | 🛡️ $_patch"

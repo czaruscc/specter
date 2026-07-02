@@ -4,6 +4,8 @@ MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
 . "$MODDIR/../lib/constants.sh"
 
+detect_keystore_manager
+
 BLACKLIST="$SPECTER_DIR/blacklist.txt"
 BLACKLIST_ENABLED="$SPECTER_DIR/blacklist_enabled"
 KNOWN_PKGS="$SPECTER_DIR/auto_known_packages.txt"
@@ -13,11 +15,15 @@ _feature_should_run "target" || { log_d "AUTO_TARGET" "target disabled or claime
 
 log_i "AUTO_TARGET" "Scanning for new packages"
 
-[ -f "$TARGET_TXT" ] || { log_w "AUTO_TARGET" "target.txt missing, skipping"; exit 0; }
+ksm_available || { log_d "AUTO_TARGET" "no keystore manager, skipping"; exit 0; }
+[ -f "$KSM_TARGETS" ] || { log_w "AUTO_TARGET" "target list missing, skipping"; exit 0; }
 
 pkgs=$(pm list packages -3 2>/dev/null) || { log_e "AUTO_TARGET" "pm list packages failed"; exit 1; }
 echo "$pkgs" | cut -d ":" -f 2 | sort -u > "$TEMP_LIST"
 [ ! -s "$TEMP_LIST" ] && { rm -f "$TEMP_LIST"; exit 0; }
+
+_EXISTING="$SPECTER_DIR/.auto_target_existing.$$"
+ksm_read_targets > "$_EXISTING" 2>/dev/null || : > "$_EXISTING"
 
 _known=""
 [ -f "$KNOWN_PKGS" ] && _known=$(cat "$KNOWN_PKGS")
@@ -25,7 +31,7 @@ _known=""
 _new_pkgs=""
 while IFS= read -r _pkg; do
   [ -z "$_pkg" ] && continue
-    if ! echo "$_known" | grep -Fxq "$_pkg" 2>/dev/null && ! grep -Fxq "$_pkg" "$TARGET_TXT" 2>/dev/null; then
+    if ! echo "$_known" | grep -Fxq "$_pkg" 2>/dev/null && ! grep -Fxq "$_pkg" "$_EXISTING" 2>/dev/null; then
     if [ -f "$BLACKLIST_ENABLED" ] && [ -s "$BLACKLIST" ]; then
       if grep -Fxq "$_pkg" "$BLACKLIST" 2>/dev/null; then
         continue
@@ -35,6 +41,9 @@ while IFS= read -r _pkg; do
 "
   fi
 done < "$TEMP_LIST"
+
+_STAGING="$SPECTER_DIR/.auto_target_staging.$$"
+ksm_read_targets_raw > "$_STAGING" 2>/dev/null || : > "$_STAGING"
 
 if [ -n "$_new_pkgs" ]; then
   _default_mode=$(cfg_get target_default_mode "bare")
@@ -46,7 +55,7 @@ if [ -n "$_new_pkgs" ]; then
   _added=0
   while IFS= read -r _pkg; do
     [ -z "$_pkg" ] && continue
-    echo "${_pkg}${_suffix}" >> "$TARGET_TXT"
+    echo "${_pkg}${_suffix}" >> "$_STAGING"
     _added=$((_added + 1))
   done <<EOF
 $_new_pkgs
@@ -59,7 +68,8 @@ fi
 _installed_list=$(pm list packages -3 2>/dev/null | cut -d: -f2 | sort -u)
 _bl_set=""
 [ -f "$BLACKLIST_ENABLED" ] && [ -s "$BLACKLIST" ] && _bl_set=$(cat "$BLACKLIST")
-_TMP_CLEAN="${TARGET_TXT}.clean.$$"
+_TMP_CLEAN="$SPECTER_DIR/.auto_target_clean.$$"
+: > "$_TMP_CLEAN"
 
 _cleaned=0
 while IFS= read -r _line || [ -n "$_line" ]; do
@@ -81,15 +91,14 @@ while IFS= read -r _line || [ -n "$_line" ]; do
   else
     _cleaned=$((_cleaned + 1))
   fi
-done < "$TARGET_TXT"
+done < "$_STAGING"
 
-if [ -f "$_TMP_CLEAN" ]; then
-  mv -f "$_TMP_CLEAN" "$TARGET_TXT"
-  [ "$_cleaned" -gt 0 ] && log_i "AUTO_TARGET" "Removed $_cleaned stale/blacklisted entry(s)"
-fi
-unset _installed_list _bl_set _TMP_CLEAN _cleaned _fixed _keep _base
+ksm_commit_targets "$_TMP_CLEAN"
+[ "$_cleaned" -gt 0 ] && log_i "AUTO_TARGET" "Removed $_cleaned stale/blacklisted entry(s)"
+
+unset _installed_list _bl_set _cleaned _fixed _keep _base
 
 cp "$TEMP_LIST" "$KNOWN_PKGS" 2>/dev/null || true
-rm -f "$TEMP_LIST"
+rm -f "$TEMP_LIST" "$_EXISTING" "$_STAGING"
 log_i "AUTO_TARGET" "Auto-target scan complete"
 exit 0

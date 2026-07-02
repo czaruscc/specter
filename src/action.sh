@@ -101,6 +101,7 @@ _first_boot=0
 
   run_device_info "$MODDIR"
   sh "$MODDIR/features/keybox_info.sh" >/dev/null 2>&1 || true
+  sh "$MODDIR/features/keystore_info.sh" >/dev/null 2>&1 || true
 
   [ -f "$MODDIR/module.prop.bak" ] && cp "$MODDIR/module.prop.bak" "$MODDIR/module.prop"
   . "$MODDIR/lib/desc.sh"

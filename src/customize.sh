@@ -35,6 +35,14 @@ else
   ui_print "- Tricky Store: none"
 fi
 
+# OhMyKeymint version
+_omk_name=$(_omk_prop)
+if [ -n "$_omk_name" ]; then
+  ui_print "- $_omk_name"
+else
+  ui_print "- OhMyKeymint: none"
+fi
+
 # PIF version
 _pif_name=$(_pif_prop)
 if [ -n "$_pif_name" ]; then
@@ -55,16 +63,20 @@ ui_print ""
 
 unset _zygisk_name
 
-# Install missing: TEESimulator-RS
-if [ -z "$_ts_name" ]; then
+# Install missing: TEESimulator-RS (skip entirely if OMK is present — OMK is
+# its own keystore implementation and doesn't need/use Tricky Store or a
+# TEE simulator fork)
+if [ -z "$_ts_name" ] && [ -z "$_omk_name" ]; then
   ui_print "- Installing TEESimulator-RS.."
   if install_module_from_github "Enginex0/TEESimulator-RS" "TEESimulator-RS"; then
     ui_print "- TEESimulator-RS installed"
   else
     ui_print "- TEESimulator-RS not available"
   fi
+elif [ -n "$_omk_name" ]; then
+  ui_print "- OhMyKeymint detected, skipping TEESimulator-RS"
 fi
-unset _ts_name
+unset _ts_name _omk_name
 
 # Mark first-boot setup as pending (runs once after reboot in service.sh)
 mkdir -p "$SPECTER_DIR"

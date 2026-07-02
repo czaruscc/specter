@@ -41,31 +41,18 @@ _read_tee_status() {
 
 _merge_setup() {
   _count=0; _added=0
-  _TMP_EXIST="${TARGET_TXT}.exist.$$"
-  _TMP_TARGET="${TARGET_TXT}.new.$$"
+  _TMP_EXIST="$SPECTER_DIR/.target_exist.$$"
+  _TMP_TARGET="$SPECTER_DIR/.target_new.$$"
 }
 
 _merge_cleanup() {
-  rm -f "${TARGET_TXT}.bak" 2>/dev/null
-  [ -f "$TARGET_TXT" ] && cp "$TARGET_TXT" "${TARGET_TXT}.bak" 2>/dev/null
-  [ -f "$_TMP_TARGET" ] && mv -f "$_TMP_TARGET" "$TARGET_TXT"
+  [ -f "$_TMP_TARGET" ] && ksm_commit_targets "$_TMP_TARGET"
   unset _TMP_EXIST _TMP_TARGET _count _added
 }
 
 _merge_load_existing() {
-  if [ -f "$TARGET_TXT" ] && [ -s "$TARGET_TXT" ]; then
-    cp "$TARGET_TXT" "$_TMP_TARGET"
-    : > "$_TMP_EXIST"
-    tr -d '\r' < "$TARGET_TXT" 2>/dev/null | while IFS= read -r _line || [ -n "$_line" ]; do
-      [ -z "$_line" ] && continue
-      case "$_line" in \[*\]) continue ;; esac
-      _base=$(_normalize_pkg "$_line")
-      [ -n "$_base" ] && printf '%s\n' "$_base" >> "$_TMP_EXIST"
-    done
-  else
-    : > "$_TMP_TARGET"
-    : > "$_TMP_EXIST"
-  fi
+  ksm_read_targets_raw > "$_TMP_TARGET" 2>/dev/null || : > "$_TMP_TARGET"
+  ksm_read_targets > "$_TMP_EXIST" 2>/dev/null || : > "$_TMP_EXIST"
 }
 
 _normalize_pkg() {

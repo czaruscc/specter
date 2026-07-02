@@ -13,8 +13,16 @@ bootstrap() {
   BIN_DIR="$TEST_ROOT/bin"; CONFIG_DIR="$TEST_ROOT/config"
   SPECTER_DIR="$TEST_ROOT/specter"; TRICKY_DIR="$TEST_ROOT/tricky_store"
   MODDIR="$TEST_ROOT"
-  mkdir -p "$PROPS_DIR" "$LOGS_DIR" "$BIN_DIR" "$CONFIG_DIR/val" "$SPECTER_DIR" "$TRICKY_DIR"
+  MODULES_BASE="$TEST_ROOT/modules"
+  OMK_MODULE="$MODULES_BASE/OhMyKeymint"
+  OMK_DIR="$TEST_ROOT/omk"
+  OMK_KEYBOX="$OMK_DIR/keybox.xml"
+  OMK_INJECTOR="$OMK_DIR/injector.toml"
+  OMK_CONFIG="$OMK_DIR/config.toml"
+  OMK_RESTART_DIR="$TEST_ROOT/omk_restart"
+  mkdir -p "$PROPS_DIR" "$LOGS_DIR" "$BIN_DIR" "$CONFIG_DIR/val" "$SPECTER_DIR" "$TRICKY_DIR" "$MODULES_BASE"
   export MOCK_DIR PROPS_DIR LOGS_DIR BIN_DIR CONFIG_DIR SPECTER_DIR TRICKY_DIR MODDIR
+  export MODULES_BASE OMK_MODULE OMK_DIR OMK_KEYBOX OMK_INJECTOR OMK_CONFIG OMK_RESTART_DIR
 
   cat > "$BIN_DIR/resetprop" << 'MOCK'
 #!/bin/sh
@@ -76,6 +84,7 @@ source_libs() {
   . "$REPO_ROOT/src/lib/detect.sh" 2>/dev/null
   . "$REPO_ROOT/src/lib/props.sh" 2>/dev/null
   . "$REPO_ROOT/src/lib/keybox.sh" 2>/dev/null
+  . "$REPO_ROOT/src/lib/keystore.sh" 2>/dev/null
   . "$REPO_ROOT/src/lib/conflicts.sh" 2>/dev/null
   SPECTER_DIR="$TEST_ROOT/specter"
   GMS_PROPS_FILE="$TEST_ROOT/gms_certified_props.json"
@@ -83,6 +92,27 @@ source_libs() {
   VBMETA_DIGEST="$SPECTER_DIR/vbmeta_digest"
   TEE_STATUS="$SPECTER_DIR/tee_status"
   TEE_BHASH="$SPECTER_DIR/tee_hash"
+  # constants.sh only sets these on first use (:=), so re-derive them from
+  # the current TRICKY_DIR/OMK_DIR on every call — otherwise they stick to
+  # whichever TEST_ROOT was active the first time source_libs ran.
+  TARGET_FILE="$TRICKY_DIR/keybox.xml"
+  BACKUP_FILE="$SPECTER_DIR/backup/keybox.xml.bak"
+  LOCKED_FILE="$TRICKY_DIR/locked.xml"
+  LOCKED_BACKUP="$SPECTER_DIR/backup/locked.xml.bak"
+  TARGET_TXT="$TRICKY_DIR/target.txt"
+  SECURITY_PATCH_FILE="$TRICKY_DIR/security_patch.txt"
+  BACKUP_DIR="$SPECTER_DIR/backup"
+  OMK_KEYBOX="$OMK_DIR/keybox.xml"
+  OMK_INJECTOR="$OMK_DIR/injector.toml"
+  OMK_CONFIG="$OMK_DIR/config.toml"
+}
+
+# Fakes an installed module by writing $MODULES_BASE/<id>/module.prop.
+mk_module() {
+  _mkm_id="$1" _mkm_name="$2"
+  mkdir -p "$MODULES_BASE/$_mkm_id"
+  printf 'name=%s\n' "$_mkm_name" > "$MODULES_BASE/$_mkm_id/module.prop"
+  unset _mkm_id _mkm_name
 }
 
 run_feature() {
