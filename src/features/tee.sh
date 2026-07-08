@@ -43,7 +43,8 @@ if [ ! -f "$_dex" ]; then
   exit 1
 fi
 
-sleep 5
+# Wait for keystore/Binder at boot; skip on hot install — system is already up.
+[ "${SPECTER_HOT_INSTALL:-0}" = "1" ] || sleep 5
 timeout 15 /system/bin/app_process -Djava.class.path="$_dex" / com.dpejoh.specter.Main "$SPECTER_DIR" 2>&1 || true
 unset _dex
 

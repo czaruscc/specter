@@ -115,7 +115,15 @@ unset _arch _src _f
 mkdir -p "$SPECTER_DIR/config"
 cp "$MODPATH/config/conflicts.txt" "$SPECTER_DIR/config/conflicts.txt" 2>/dev/null || true
 
-ui_print ""
-ui_print " >> First-boot setup: backup, target, security patch, keybox (next reboot)"
+# Hot install — ksu-only, update-already-present: move staging into the
+# live dir and re-apply without a reboot. no-op on apatch/magisk/first install.
+. "$MODPATH/lib/hotinstall.sh"
+specter_hot_install
+
+# The "next reboot" message only applies when we didn't just live-apply.
+if [ -z "${_specter_hot_done:-}" ]; then
+  ui_print ""
+  ui_print " >> First-boot setup: backup, target, security patch, keybox (next reboot)"
+fi
 
 return 0
